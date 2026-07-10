@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <record id="view_requi_purchase_request_wizard_form" model="ir.ui.view">
+        <field name="name">requi.purchase.request.wizard.form</field>
+        <field name="model">requi.purchase.request.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Agregar líneas de requisición a solicitud de insumos">
+                <!-- sheet eliminado: no es necesario en wizards (target="new") -->
+                <group>
+                    <field name="requisition_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="purchase_request_id"
+                           options="{'no_create': True}"
+                           placeholder="Seleccione una solicitud de insumos activa"
+                           domain="[('state', '=', 'draft')]"
+                           required="1"/>
+                </group>
+                <field name="line_ids" nolabel="1" mode="tree">
+                    <tree editable="bottom" create="false" delete="false">
+                        <!-- open_form="false" eliminado (no es estándar en Odoo 17) -->
+                        <field name="selected" widget="boolean_toggle"/>
+                        <field name="product_id" readonly="1" options="{'no_create': True}"/>
+                        <field name="requisition_qty" readonly="1" string="Req."/>
+                        <field name="product_qty" string="Cantidad" decoration-bf="1"/>
+                        <field name="uom_id" readonly="1"/>
+                        <field name="note" readonly="1" optional="hide"/>
+                        <field name="analytic_distribution" optional="hide" groups="analytic.group_analytic_accounting"/>
+                        <field name="project_id" optional="hide"/>
+                        <field name="task_id" optional="hide"/>
+                        <field name="priority" optional="hide" widget="badge"/>
+                        <field name="supplier_id" optional="hide"/>
+                        <!-- Campos invisibles para mantener datos -->
+                        <field name="requisition_line_id" column_invisible="1"/>
+                    </tree>
+                </field>
+                <footer>
+                    <button name="add_to_request" string="Agregar" type="object" class="btn-primary"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

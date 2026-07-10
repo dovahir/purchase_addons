@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <!-- =========================== EXTENSIÓN DEL FORMULARIO DE STOCK.MOVE =========================== -->
+    <record id="view_stock_move_form_inherit" model="ir.ui.view">
+        <field name="name">stock.move.form.inherit.purchase_addons</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_move_form"/>
+        <field name="arch" type="xml">
+            <!-- Agregar campo de línea de solicitud en el grupo de información -->
+            <field name="state" position="after">
+                <field name="purchase_request_line_id" string="Línea de solicitud" readonly="1"/>
+            </field>
+
+            <!-- Agregar grupo de asignaciones dentro de sheet (evitando dependencia de linked_group) -->
+            <xpath expr="//sheet" position="inside">
+                <group name="purchase_request_group" string="Solicitud de Insumos" colspan="2">
+                    <field name="purchase_request_allocation_ids" nolabel="1">
+                        <tree decoration-muted="purchase_state == 'cancel'">
+                            <field name="purchase_request_line_id" string="Línea de solicitud"/>
+                            <field name="product_id" string="Producto"/>
+                            <field name="requested_product_uom_qty" string="Solicitado"/>
+                            <field name="allocated_product_qty" string="Asignado"/>
+                            <field name="open_product_qty" string="Pendiente"/>
+                            <field name="product_uom_id" string="UoM"/>
+                            <field name="purchase_state" column_invisible="1"/>
+                        </tree>
+                    </field>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- =========================== VISTA DE ASIGNACIONES (MODELO EXTERNO) =========================== -->
+    <record id="view_purchase_request_allocation_tree" model="ir.ui.view">
+        <field name="name">purchase.request.allocation.tree</field>
+        <field name="model">purchase.request.allocation</field>
+        <field name="arch" type="xml">
+            <tree string="Asignaciones de Solicitud" create="false" delete="false">
+                <field name="purchase_request_line_id" string="Línea de solicitud"/>
+                <field name="stock_move_id" string="Movimiento de stock"/>
+                <field name="purchase_line_id" string="Línea de compra"/>
+                <field name="product_id" string="Producto"/>
+                <field name="requested_product_uom_qty" string="Solicitado" sum="Total"/>
+                <field name="allocated_product_qty" string="Asignado" sum="Total"/>
+                <field name="open_product_qty" string="Pendiente" sum="Total"/>
+                <field name="product_uom_id" string="UoM"/>
+                <field name="purchase_state" string="Estado compra" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- =========================== ACCIÓN PARA VER ASIGNACIONES DESDE LA LÍNEA =========================== -->
+    <record id="action_purchase_request_allocation" model="ir.actions.act_window">
+        <field name="name">Asignaciones</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request.allocation</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_purchase_request_allocation_tree"/>
+        <field name="binding_model_id" ref="model_purchase_request_line"/>
+        <field name="binding_type">action</field>
+        <field name="context">{'default_purchase_request_line_id': active_id}</field>
+    </record>
+</odoo>

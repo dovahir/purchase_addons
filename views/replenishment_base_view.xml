@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<odoo>
+    <!-- =========================== ACCIÓN PARA EL WIZARD =========================== -->
+    <record id="action_replenish_purchase_request_wizard" model="ir.actions.act_window">
+        <field name="name">Agregar a solicitud de insumos</field>
+        <field name="res_model">replenish.purchase.request.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="stock.model_stock_warehouse_orderpoint"/>
+        <field name="binding_type">action</field>
+        <field name="help" type="html">
+            <p>Agrega los productos seleccionados a una solicitud de insumos activa.</p>
+        </field>
+    </record>
+
+    <!-- =========================== EXTENSIÓN DE LA VISTA TREE DE ORDERPOINT (v17) =========================== -->
+    <record id="view_stock_replenishment_tree_inherit" model="ir.ui.view">
+        <field name="name">stock.replenishment.tree.inherit.purchase_addons</field>
+        <field name="model">stock.warehouse.orderpoint</field>
+        <!-- ID de la vista de reabastecimiento en Odoo v17 -->
+        <field name="inherit_id" ref="stock.view_warehouse_orderpoint_tree_editable"/>
+        <field name="arch" type="xml">
+            <!-- Botón por línea (sin [id] en contexto, Odoo lo inyecta automáticamente) -->
+            <xpath expr="//tree/field[@name='product_uom_name']" position="after">
+                <button name="action_add_to_purchase_request"
+                        type="object"
+                        icon="fa-cart-plus"
+                        title="Agregar este producto a una solicitud de insumos"
+                        string="Agregar a solicitud"
+                />
+            </xpath>
+
+            <!-- Botón "Agregar seleccionados a solicitud" en el header del tree -->
+            <xpath expr="//tree" position="inside">
+                <header>
+                    <button name="action_add_to_purchase_request"
+                            type="object"
+                            string="Agregar seleccionados a solicitud"
+                            class="btn-primary"
+                            context="{'active_model': 'stock.warehouse.orderpoint'}"
+                    />
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- =========================== EXTENSIÓN DEL FORMULARIO DE ORDERPOINT (CORREGIDO) =========================== -->
+    <record id="view_stock_replenishment_form_inherit" model="ir.ui.view">
+        <field name="name">stock.replenishment.form.inherit.purchase_addons</field>
+        <field name="model">stock.warehouse.orderpoint</field>
+        <field name="inherit_id" ref="stock.view_warehouse_orderpoint_form"/>
+        <field name="arch" type="xml">
+            <!-- Insertar botón dentro del button_box existente -->
+            <xpath expr="//field[@name='product_id']" position="after">
+                <button name="%(purchase_addons.action_replenish_purchase_request_wizard)d"
+                        type="action"
+                        class="oe_stat_button"
+                        icon="fa-cart-plus"
+                        string="Agregar a solicitud"
+                        context="{'active_model': 'stock.warehouse.orderpoint'}"
+                        help="Agregar este producto a una solicitud de insumos activa"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

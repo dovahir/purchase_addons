@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<odoo>
+
+    <menuitem id="menu_purchase_request_act"
+              name="Solicitudes de Insumos"
+              parent="purchase.menu_procurement_management"
+              action="action_purchase_request_form"
+              sequence="-10"
+              groups="purchase_addons.group_purchase_request_user"/>
+
+    <menuitem id="menu_purchase_request_line"
+              name="Líneas de Solicitud de Insumos"
+              parent="purchase.menu_procurement_management"
+              action="purchase_request_line_form_action"
+              sequence="-5"
+              groups="purchase_addons.group_purchase_request_user"/>
+
+</odoo>

@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <!-- =========================== CATEGORÍA DE GRUPOS =========================== -->
+    <record id="module_category_purchase_request" model="ir.module.category">
+        <field name="name">Solicitudes de Insumos</field>
+        <field name="parent_id" ref="base.module_category_purchase_management"/>
+        <field name="sequence">15</field>
+    </record>
+
+    <!-- =========================== GRUPOS DE USUARIOS =========================== -->
+    <!-- Grupo base: Usuario de Solicitudes de Insumos -->
+    <record id="group_purchase_request_user" model="res.groups">
+        <field name="name">Usuario</field>
+        <field name="category_id" ref="module_category_purchase_request"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Usuario con acceso básico a solicitudes de insumos (creación, edición propia, lectura).</field>
+    </record>
+
+    <!-- Grupo avanzado: Gestor de Solicitudes de Insumos (acceso total) -->
+    <record id="group_purchase_request_manager" model="res.groups">
+        <field name="name">Gestor</field>
+        <field name="category_id" ref="module_category_purchase_request"/>
+        <field name="implied_ids" eval="[(4, ref('group_purchase_request_user'))]"/>
+        <field name="comment">Acceso completo a todas las solicitudes de insumos, sin restricciones de usuario.</field>
+    </record>
+
+    <!-- =========================== REGLAS DE SEGURIDAD (RECORD RULES) =========================== -->
+
+    <!-- Multi-compañía (aplica a todos los usuarios) -->
+    <record id="purchase_request_company_rule" model="ir.rule">
+        <field name="name">Solicitudes multi-compañía</field>
+        <field name="model_id" ref="model_purchase_request"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+    </record>
+
+    <!-- Regla de usuario: solo ver sus propias solicitudes -->
+    <record id="purchase_request_user_rule" model="ir.rule">
+        <field name="name">Solicitudes: propio usuario</field>
+        <field name="model_id" ref="model_purchase_request"/>
+        <field name="groups" eval="[(4, ref('group_purchase_request_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+        <field name="domain_force">[('requested_by','=',user.id)]</field>
+    </record>
+
+    <!-- Regla de manager: acceso total -->
+    <record id="purchase_request_manager_rule" model="ir.rule">
+        <field name="name">Solicitudes: acceso total (manager)</field>
+        <field name="model_id" ref="model_purchase_request"/>
+        <field name="groups" eval="[(4, ref('group_purchase_request_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
+
+    <!-- =========================== REGLAS PARA LÍNEAS =========================== -->
+
+    <!-- Multi-compañía para líneas -->
+    <record id="purchase_request_line_company_rule" model="ir.rule">
+        <field name="name">Líneas multi-compañía</field>
+        <field name="model_id" ref="model_purchase_request_line"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+    </record>
+
+    <!-- Regla de usuario: líneas de sus propias solicitudes -->
+    <record id="purchase_request_line_user_rule" model="ir.rule">
+        <field name="name">Líneas: propio usuario</field>
+        <field name="model_id" ref="model_purchase_request_line"/>
+        <field name="groups" eval="[(4, ref('group_purchase_request_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+        <field name="domain_force">[('request_id.requested_by','=',user.id)]</field>
+    </record>
+
+    <!-- Regla de manager: acceso total a líneas -->
+    <record id="purchase_request_line_manager_rule" model="ir.rule">
+        <field name="name">Líneas: acceso total (manager)</field>
+        <field name="model_id" ref="model_purchase_request_line"/>
+        <field name="groups" eval="[(4, ref('group_purchase_request_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
+
+    <!-- =========================== REGLAS PARA ASIGNACIONES =========================== -->
+    <!-- Las asignaciones son generalmente de solo lectura para usuarios normales, pero se delega a la línea -->
+    <record id="purchase_request_allocation_company_rule" model="ir.rule">
+        <field name="name">Asignaciones multi-compañía</field>
+        <field name="model_id" ref="model_purchase_request_allocation"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">['|',('company_id','=',False),('company_id','in',company_ids)]</field>
+    </record>
+
+    <!-- Regla de usuario: asignaciones de sus líneas -->
+    <record id="purchase_request_allocation_user_rule" model="ir.rule">
+        <field name="name">Asignaciones: propias</field>
+        <field name="model_id" ref="model_purchase_request_allocation"/>
+        <field name="groups" eval="[(4, ref('group_purchase_request_user'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+        <field name="domain_force">[('purchase_request_line_id.request_id.requested_by','=',user.id)]</field>
+    </record>
+
+    <!-- Regla de manager: acceso total a asignaciones -->
+    <record id="purchase_request_allocation_manager_rule" model="ir.rule">
+        <field name="name">Asignaciones: acceso total (manager)</field>
+        <field name="model_id" ref="model_purchase_request_allocation"/>
+        <field name="groups" eval="[(4, ref('group_purchase_request_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+        <field name="domain_force">[(1,'=',1)]</field>
+    </record>
+
+</odoo>

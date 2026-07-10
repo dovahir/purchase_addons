@@ -1,0 +1,64 @@
+# -*- coding: utf-8 -*-
+
+{
+    'name': 'Complementos para Compras',
+    'version': '17.0.1.0.0',
+    'category': 'Purchases',
+    'summary': 'Serie de modificaciones y Funcionalidades para Compras',
+    'description': """
+        Módulo para la gestión de solicitudes de insumos (lista de compras).
+        Permite agrupar productos desde requisiciones de empleados o reabastecimiento
+        para su posterior compra mediante RFQ/PO.
+
+        Características principales:
+        - Solicitudes con estados: Activa, En proceso, Completada, Cancelada
+        - Líneas con estados: Pendiente, En cotización, Por recepcionar, Parcialmente comprado, Comprado, Cancelado
+        - Integración con requisiciones de empleados
+        - Integración con reabastecimiento (puntos de pedido)
+        - Creación de RFQ desde líneas de solicitud
+        - Agregar líneas a RFQ existentes
+        - Trazabilidad completa con asignaciones (stock.move y purchase.order.line)
+        - Actualización automática de estados al confirmar PO y recibir productos
+    """,
+    'author': 'Aldahir',
+    'website': 'https://github.com/your-repo/purchase_addons',
+    'depends': [
+        'purchase',
+        'stock',
+        'employee_purchase_requisition',
+    ],
+    'data': [
+        # Seguridad
+        'security/purchase_request_security.xml',
+        'security/ir.model.access.csv',
+
+        # Datos
+        'data/purchase_request_sequence.xml',
+
+        # Wizards
+        'wizard/requi_purchase_request_wizard_view.xml',
+        'wizard/replenish_purchase_request_wizard_view.xml',
+        'wizard/purchase_request_add_to_rfq_wizard_view.xml',
+
+        # Vistas principales
+        'views/purchase_request_view.xml',
+        'views/purchase_request_line_view.xml',
+        'views/purchase_order_view.xml',
+        'views/stock_move_views.xml',
+        'views/replenishment_base_view.xml',
+        'views/menu_views.xml',
+		'views/purchase_requisition_view.xml',
+],
+    'demo': [
+        # 'demo/purchase_request_demo.xml',  # Opcional: datos de demostración
+    ],
+    'installable': True,
+    'application': True,
+    'auto_install': False,
+    'license': 'LGPL-3',
+    'assets': {
+        'web.assets_backend': [
+            # 'purchase_addons/static/src/js/widgets.js',  # Si se necesitan widgets personalizados
+        ],
+    },
+}

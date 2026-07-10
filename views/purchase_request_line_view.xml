@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<odoo>
+    <!-- =========================== VISTA DE ÁRBOL =========================== -->
+    <record id="purchase_request_line_tree" model="ir.ui.view">
+        <field name="name">purchase.request.line.tree</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <tree
+                name="Líneas de Solicitud"
+                create="false"
+                decoration-muted="line_state in ('cancel')"
+                decoration-info="line_state in ('pending','in_progress')"
+                decoration-warning="line_state == 'to_receive'"
+                decoration-success="line_state in ('partially_purchased','purchased')"
+            >
+                <field name="request_id" string="Solicitud"/>
+                <field name="line_state" widget="badge"
+                       decoration-muted="line_state == 'cancel'"
+                       decoration-info="line_state in ('pending','in_progress')"
+                       decoration-warning="line_state == 'to_receive'"
+                       decoration-success="line_state in ('partially_purchased','purchased')"/>
+                <field name="product_id" string="Producto" options="{'no_create': True}"/>
+                <field name="product_qty" string="Cantidad" sum="Total"/>
+                <field name="product_uom_id" string="UoM" groups="uom.group_uom" options="{'no_create': True}"/>
+                <field name="date_required" string="Fecha requerida"/>
+                <field name="supplier_id" string="Proveedor preferido" optional="show"/>
+                <field name="project_id" string="Proyecto" optional="hide"/>
+                <field name="task_id" string="Tarea" optional="hide"/>
+                <field name="priority" widget="badge" optional="show"
+                       decoration-warning="priority == 'urgent'"/>
+                <field name="is_replenishment" string="Reabastecimiento" optional="hide" widget="boolean"/>
+                <field name="purchase_state" string="Estado de compra" optional="hide" widget="badge"/>
+                <field name="pending_qty_to_buy" string="Pendiente comprar" optional="hide"/>
+                <field name="qty_in_progress" string="En proceso" optional="hide"/>
+                <field name="qty_done" string="Recibido" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" widget="selection" optional="hide"/>
+<!--                <button name="action_show_details" type="object"-->
+<!--                        icon="fa-external-link" title="Ver detalle" optional="hide"/>-->
+            </tree>
+        </field>
+    </record>
+
+    <!-- =========================== VISTA DE BÚSQUEDA =========================== -->
+    <record id="purchase_request_line_search" model="ir.ui.view">
+        <field name="name">purchase.request.line.search</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Líneas de Solicitud">
+                <field name="request_id" string="Solicitud"/>
+                <field name="product_id" string="Producto" filter_domain="[('product_id','=',self)]"/>
+                <field name="project_id" string="Proyecto"/>
+                <field name="task_id" string="Tarea"/>
+                <field name="supplier_id" string="Proveedor"/>
+                <field name="analytic_distribution" groups="analytic.group_analytic_accounting"/>
+
+                <separator/>
+                <filter name="state_pending" string="Pendientes" domain="[('line_state','=','pending')]"/>
+                <filter name="state_in_progress" string="En cotización" domain="[('line_state','=','in_progress')]"/>
+                <filter name="state_to_receive" string="Por recepcionar" domain="[('line_state','=','to_receive')]"/>
+                <filter name="state_partial" string="Parcialmente comprado" domain="[('line_state','=','partially_purchased')]"/>
+                <filter name="state_purchased" string="Comprados" domain="[('line_state','=','purchased')]"/>
+                <filter name="state_cancel" string="Cancelados" domain="[('line_state','=','cancel')]"/>
+                <separator/>
+                <filter name="my_requests" string="Mis solicitudes" domain="[('request_id.requested_by','=',uid)]"/>
+                <filter name="qty_to_buy" string="Pendiente de comprar" domain="[('pending_qty_to_buy','>',0)]"/>
+                <filter name="all_bought" string="Totalmente comprados" domain="[('pending_qty_to_buy','=',0)]"/>
+                <filter name="open_qty" string="Con cantidad en proceso" domain="[('qty_in_progress','>',0)]"/>
+                <filter name="urgent" string="Urgentes" domain="[('priority','=','urgent')]"/>
+
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_request" string="Solicitud" context="{'group_by':'request_id'}"/>
+                    <filter name="group_product" string="Producto" context="{'group_by':'product_id'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by':'line_state'}"/>
+                    <filter name="group_project" string="Proyecto" context="{'group_by':'project_id'}"/>
+                    <filter name="group_priority" string="Prioridad" context="{'group_by':'priority'}"/>
+                    <filter name="group_supplier" string="Proveedor" context="{'group_by':'supplier_id'}"/>
+                    <filter name="group_purchase_state" string="Estado de compra" context="{'group_by':'purchase_state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- =========================== VISTA DE FORMULARIO =========================== -->
+    <record id="purchase_request_line_form" model="ir.ui.view">
+        <field name="name">purchase.request.line.form</field>
+        <field name="model">purchase.request.line</field>
+        <field name="priority" eval="20"/>
+        <field name="arch" type="xml">
+            <form string="Línea de Solicitud" create="false" duplicate="false">
+                <header>
+                    <field name="line_state" widget="statusbar"
+                           statusbar_visible="pending,in_progress,to_receive,partially_purchased,purchased,cancel"
+                           readonly="1"/>
+                </header>
+
+                <sheet>
+                    <!-- Smart buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_request" type="object"
+                                class="oe_stat_button"
+                                icon="fa-file-text-o"
+                                string="Solicitud">
+                            <div class="o_stat_info">
+                                <field name="request_id" widget="statinfo" string="Solicitud"/>
+                            </div>
+                        </button>
+                        <button name="action_open_purchase_orders" type="object"
+                                class="oe_stat_button"
+                                icon="fa-shopping-cart"
+                                invisible="not purchase_lines">
+                            <div class="o_stat_info">
+                                <field name="purchase_lines" widget="statinfo" string="Cotizaciones"/>
+                            </div>
+                        </button>
+                        <button name="action_open_pickings" type="object"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                invisible="not purchase_request_allocation_ids"
+                                groups="stock.group_stock_manager">
+                            <div class="o_stat_info">
+                                <field name="purchase_request_allocation_ids" widget="statinfo" string="Recepciones"/>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Descripción del producto"/>
+                        </h1>
+                    </div>
+
+                    <group name="main">
+                        <group name="info">
+                            <field name="request_id" readonly="1"/>
+                            <field name="origin" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" widget="selection" readonly="1"/>
+                        </group>
+                        <group name="settings">
+                            <field name="product_id" readonly="line_state != 'draft'"/>
+                            <field name="product_uom_category_id" invisible="1"/>
+                            <field name="product_uom_id" groups="uom.group_uom" readonly="line_state != 'draft'"/>
+                            <field name="note" nolabel="1" readonly="line_state != 'draft'"/>
+                            <field name="product_qty" readonly="line_state != 'draft'"/>
+                            <field name="date_required" readonly="line_state != 'draft'"/>
+                            <field name="supplier_id" readonly="1"/>
+                            <field name="priority" widget="badge" readonly="line_state != 'draft'"/>
+                            <field name="is_replenishment" widget="boolean" readonly="1"/>
+                            <field name="requisition_product_id" readonly="1"
+                                   invisible="not requisition_product_id"
+                                   help="Línea de requisición origen"/>
+                        </group>
+                    </group>
+
+                    <group name="project_group" string="Proyecto / Tarea">
+                        <field name="project_id" readonly="line_state != 'draft'"/>
+                        <field name="task_id" readonly="line_state != 'draft'" options="{'no_create': True}"/>
+                        <field name="analytic_distribution" widget="analytic_distribution"
+                               groups="analytic.group_analytic_accounting"
+                               readonly="line_state != 'draft'"
+                               options="{'product_field': 'product_id', 'business_domain': 'purchase_order'}"/>
+                    </group>
+
+                    <group name="quantities" string="Seguimiento de cantidades">
+                        <group>
+                            <field name="pending_qty_to_buy" string="Pendiente por comprar"/>
+                            <field name="qty_in_progress" string="En proceso"/>
+                            <field name="qty_done" string="Recibido"/>
+                            <field name="qty_cancelled" string="Cancelado"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page name="purchase_lines" string="Órdenes de Compra">
+                            <group>
+                                <field name="purchase_state" widget="badge"/>
+                            </group>
+                            <field name="purchase_lines" nolabel="1"
+                                   domain="[('product_id', '=', product_id)]"
+                                   context="{'form_view_ref': 'purchase_addons.purchase_order_line_form_sub',
+                                            'tree_view_ref': 'purchase_addons.purchase_order_line_tree_sub',
+                                            'search_view_ref': 'purchase_addons.purchase_order_line_search_sub'}"/>
+                        </page>
+                        <page name="allocations" string="Asignaciones">
+                            <field name="purchase_request_allocation_ids" nolabel="1">
+                                <tree decoration-muted="purchase_state == 'cancel'">
+                                    <field name="stock_move_id" string="Movimiento"/>
+                                    <field name="purchase_line_id" string="Línea de compra"/>
+                                    <field name="product_id" string="Producto"/>
+                                    <field name="requested_product_uom_qty" string="Solicitado"/>
+                                    <field name="allocated_product_qty" string="Asignado"/>
+                                    <field name="open_product_qty" string="Pendiente"/>
+                                    <field name="product_uom_id" string="UoM"/>
+                                    <field name="purchase_state" string="Estado compra" invisible="1"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- =========================== VISTA DE DETALLES (POPUP) =========================== -->
+<!--    <record id="view_purchase_request_line_details" model="ir.ui.view">-->
+<!--        <field name="name">purchase.request.line.details.form</field>-->
+<!--        <field name="model">purchase.request.line</field>-->
+<!--        <field name="priority" eval="1000"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <form string="Detalle de Línea">-->
+<!--                <sheet>-->
+<!--                    <group name="main">-->
+<!--                        <group>-->
+<!--                            <field name="product_id" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="product_qty" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="product_uom_id" groups="uom.group_uom" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="date_required" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="priority" widget="badge" readonly="line_state != 'draft'"/>-->
+<!--                        </group>-->
+<!--                        <group>-->
+<!--                            <field name="project_id" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="task_id" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="analytic_distribution" widget="analytic_distribution"-->
+<!--                                   groups="analytic.group_analytic_accounting"-->
+<!--                                   readonly="line_state != 'draft'"/>-->
+<!--                            <field name="specifications" readonly="line_state != 'draft'"/>-->
+<!--                        </group>-->
+<!--                    </group>-->
+<!--                    <group name="quantities" string="Seguimiento">-->
+<!--                        <group>-->
+<!--                            <field name="pending_qty_to_buy"/>-->
+<!--                            <field name="qty_in_progress"/>-->
+<!--                            <field name="qty_done"/>-->
+<!--                            <field name="qty_cancelled"/>-->
+<!--                        </group>-->
+<!--                    </group>-->
+<!--                    <notebook>-->
+<!--                        <page name="purchase_lines" string="Órdenes de Compra">-->
+<!--                            <field name="purchase_lines" nolabel="1"/>-->
+<!--                        </page>-->
+<!--                    </notebook>-->
+<!--                </sheet>-->
+<!--                <footer>-->
+<!--                    <button string="Cerrar" special="cancel" class="btn-secondary"/>-->
+<!--                </footer>-->
+<!--            </form>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <!-- =========================== ACCIONES =========================== -->
+    <record id="purchase_request_line_form_action" model="ir.actions.act_window">
+        <field name="name">Líneas de Solicitud</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="purchase_request_line_search"/>
+        <field name="help" type="html">
+            <p>
+                Las líneas de solicitud representan productos individuales
+                agrupados en solicitudes de insumos. Desde aquí puede ver
+                el estado de cada producto y las órdenes de compra asociadas.
+            </p>
+        </field>
+    </record>
+
+    <!-- Acción desde producto (binding) -->
+    <record id="action_purchase_request_line_product_tree" model="ir.actions.act_window">
+        <field name="name">Solicitudes de Insumos</field>
+        <field name="res_model">purchase.request.line</field>
+        <field name="view_mode">tree,form</field>
+        <field name="binding_model_id" ref="product.model_product_product"/>
+        <field name="context">{'search_default_product_id': active_id}</field>
+    </record>
+
+    <!-- =========================== SUB-VISTAS PARA PO LINES =========================== -->
+    <record id="purchase_order_line_form_sub" model="ir.ui.view">
+        <field name="name">purchase.order.line.form.sub</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <form string="Línea de Compra" create="false" readonly="1">
+                <sheet>
+                    <h1>
+                        <field name="order_id" readonly="1"/>
+                    </h1>
+                    <group>
+                        <group>
+                            <field name="product_id" readonly="1"/>
+                            <field name="product_qty" readonly="1"/>
+<!--                            <field name="product_uom_category_id" invisible="1"/>-->
+                            <field name="product_uom" groups="uom.group_uom" readonly="1"/>
+                            <field name="price_unit" widget="monetary" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="date_planned" widget="date" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" readonly="1"/>
+                            <field name="analytic_distribution" widget="analytic_distribution"
+                                   groups="analytic.group_analytic_accounting" readonly="1"/>
+                        </group>
+                    </group>
+                    <field name="name" readonly="1"/>
+                    <!-- Campo many2many que existe en nuestro modelo extendido -->
+                    <field name="purchase_request_lines" widget="many2many_tags" readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="purchase_order_line_tree_sub" model="ir.ui.view">
+        <field name="name">purchase.order.line.tree.sub</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <tree name="Líneas de Compra" create="false">
+                <field name="order_id" string="Orden"/>
+                <field name="product_id" string="Producto"/>
+                <field name="product_qty" string="Cantidad"/>
+                <field name="product_uom" groups="uom.group_uom"/>
+                <field name="price_unit" widget="monetary"/>
+                <field name="price_subtotal" widget="monetary" sum="Total"/>
+                <field name="date_planned" widget="date"/>
+                <field name="state" widget="badge"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="purchase_order_line_search_sub" model="ir.ui.view">
+        <field name="name">purchase.order.line.search.sub</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Líneas de Compra">
+                <field name="order_id" string="Orden"/>
+                <field name="product_id" string="Producto"/>
+                <filter name="hide_cancelled" string="Ocultar canceladas" domain="[('state','!=','cancel')]"/>
+            </search>
+        </field>
+    </record>
+
+</odoo>

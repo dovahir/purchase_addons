@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <!-- Heredar el formulario de requisiciones para agregar el botón -->
+    <record id="purchase_requisition_form_inherit" model="ir.ui.view">
+        <field name="name">employee.purchase.requisition.form.inherit.purchase_addons</field>
+        <field name="model">employee.purchase.requisition</field>
+        <field name="inherit_id" ref="employee_purchase_requisition.purchase_requisition_form"/>
+        <field name="arch" type="xml">
+            <!-- Buscar el último botón del header e insertar después -->
+            <xpath expr="//header/button[last()]" position="after">
+                <button name="action_open_requi_purchase_request_wizard"
+                        string="Agregar a lista de compras"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state not in ('approved', 'purchase_order_created')"
+                        help="Agregar líneas a una solicitud de insumos activa"
+                        groups="employee_purchase_requisition.employee_requisition_manager"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

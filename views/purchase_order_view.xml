@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <!-- =========================== EXTENSIÓN DEL FORMULARIO DE PURCHASE.ORDER =========================== -->
+    <record id="purchase_order_form_inherit" model="ir.ui.view">
+        <field name="name">purchase.order.form.inherit.purchase_addons</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Smart button en el button_box (corregido para Odoo v17) -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_open_purchase_requests" type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o"
+                        invisible="purchase_request_count == 0">
+                    <field name="purchase_request_count" widget="statinfo" string="Solicitudes"/>
+                </button>
+            </xpath>
+
+            <!-- Campos ocultos en la cabecera para trazabilidad -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="purchase_request_ids" invisible="1"/>
+                <field name="purchase_request_line_ids" invisible="1"/>
+            </xpath>
+
+            <!-- Inyección en el tree de líneas de compra (corregido) -->
+            <xpath expr="//field[@name='order_line']/tree//field[@name='price_subtotal']" position="after">
+                <field name="purchase_request_lines" column_invisible="1"/>
+                <button name="action_open_request_line_tree_view" type="object"
+                        icon="fa-list" title="Ver Líneas de solicitud"
+                        invisible="not purchase_request_lines"
+                        optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- =========================== EXTENSIÓN DEL FORMULARIO DE PURCHASE.ORDER.LINE =========================== -->
+    <record id="purchase_order_line_form_inherit" model="ir.ui.view">
+        <field name="name">purchase.order.line.form.inherit.purchase_addons</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_form2"/>
+        <field name="arch" type="xml">
+            <!-- Agregar campo de líneas de solicitud en el formulario de línea de compra -->
+            <field name="name" position="after">
+                <separator string="Solicitudes de Insumos"/>
+                <field name="purchase_request_lines" widget="many2many_tags" readonly="1"/>
+            </field>
+        </field>
+    </record>
+</odoo>

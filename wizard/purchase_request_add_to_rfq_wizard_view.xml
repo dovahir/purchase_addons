@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <record id="view_purchase_request_add_to_rfq_wizard_form" model="ir.ui.view">
+        <field name="name">purchase.request.add.to.rfq.wizard.form</field>
+        <field name="model">purchase.request.add.to.rfq.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Agregar líneas a cotización">
+                <group>
+                    <field name="supplier_id"
+                           required="1"
+                           options="{'no_create': True}"
+                           placeholder="Seleccione un proveedor"
+                           domain="[('supplier_rank', '>', 0)]"/>
+                    <field name="purchase_order_id"
+                           options="{'no_create': True}"
+                           placeholder="Seleccione una cotización existente (opcional)"
+                           domain="[('state', 'in', ['draft', 'sent']), ('partner_id', '=', supplier_id)]"/>
+                </group>
+
+                <field name="line_ids" nolabel="1" mode="tree">
+                    <tree editable="bottom" create="false" delete="false">
+                        <field name="wizard_id" invisible="1" readonly="1"/>
+                        <field name="selected" widget="boolean_toggle"/>
+                        <field name="request_line_id" column_invisible="1"/>
+                        <field name="product_id" readonly="1" options="{'no_create': True}"/>
+                        <field name="product_qty" string="Cantidad" decoration-bf="1"/>
+                        <field name="uom_id" readonly="1"/>
+
+                        <field name="request_id" string="Solicitud" optional="hide"/>
+                        <field name="line_state" string="Estado" widget="badge" optional="hide"/>
+                    </tree>
+                </field>
+
+                <div class="alert alert-info" role="alert" invisible="purchase_order_id">
+                    <i class="fa fa-info-circle"/> Se creará una nueva cotización con el proveedor seleccionado.
+                </div>
+                <div class="alert alert-success" role="alert" invisible="not purchase_order_id">
+                    <i class="fa fa-check-circle"/> Se agregarán las líneas a la cotización existente.
+                </div>
+
+                <footer>
+                    <button name="add_to_rfq" string="Agregar a cotización" type="object" class="btn-primary"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

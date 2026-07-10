@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<odoo>
+    <!-- =========================== ACCIONES Y MENÚS =========================== -->
+    <!-- Acción para agregar a RFQ desde el form (binding a purchase.request) -->
+    <record id="action_purchase_request_add_to_rfq" model="ir.actions.act_window">
+        <field name="name">Agregar a RFQ</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request.add.to.rfq.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_purchase_request"/>
+        <field name="binding_type">action</field>
+        <!-- Contexto eliminado: Odoo inyecta active_id automáticamente -->
+    </record>
+
+    <!-- =========================== VISTA DE ÁRBOL =========================== -->
+    <record id="view_purchase_request_tree" model="ir.ui.view">
+        <field name="name">purchase.request.tree</field>
+        <field name="model">purchase.request</field>
+        <field name="arch" type="xml">
+            <tree
+                decoration-muted="state in ('cancel')"
+                decoration-info="state in ('draft','in_progress')"
+                decoration-success="state in ('done')"
+                name="Solicitudes de Insumos"
+            >
+                <field name="name" string="Referencia"/>
+                <field name="date_start" string="Fecha de creación"/>
+                <field name="requested_by" widget="many2one_avatar_user" string="Solicitante"/>
+                <field name="origin" string="Origen" optional="show"/>
+                <field name="company_id" groups="base.group_multi_company" widget="selection" optional="show"/>
+                <field name="line_count" string="Líneas" optional="show" sum="Total"/>
+                <field name="purchase_count" string="Órdenes" optional="hide" sum="Total"/>
+                <field name="state" widget="badge"
+                       decoration-muted="state == 'cancel'"
+                       decoration-info="state in ('draft','in_progress')"
+                       decoration-success="state == 'done'"/>
+                <field name="activity_ids" widget="list_activity" optional="show"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- =========================== VISTA DE BÚSQUEDA =========================== -->
+    <record id="view_purchase_request_search" model="ir.ui.view">
+        <field name="name">purchase.request.search</field>
+        <field name="model">purchase.request</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Solicitudes">
+                <field name="name" string="Referencia" filter_domain="[('name','ilike',self)]"/>
+                <field name="origin" string="Origen" filter_domain="[('origin','ilike',self)]"/>
+                <field name="requested_by" string="Solicitante"/>
+<!--                <field name="product_id" string="Producto" filter_domain="[('line_ids.product_id','ilike',self)]"/>-->
+                <field name="picking_type_id" string="Tipo de operación"/>
+
+                <separator/>
+                <filter name="state_draft" string="Activa" domain="[('state','=','draft')]"/>
+                <filter name="state_in_progress" string="En proceso" domain="[('state','=','in_progress')]"/>
+                <filter name="state_done" string="Completada" domain="[('state','=','done')]"/>
+                <filter name="state_cancel" string="Cancelada" domain="[('state','=','cancel')]"/>
+                <separator/>
+                <filter name="my_requests" string="Mis solicitudes" domain="[('requested_by','=',uid)]"/>
+
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_state" string="Estado" context="{'group_by':'state'}"/>
+                    <filter name="group_requested_by" string="Solicitante" context="{'group_by':'requested_by'}"/>
+                    <filter name="group_date_start" string="Fecha de creación" context="{'group_by':'date_start'}"/>
+                    <filter name="group_company" string="Compañía" context="{'group_by':'company_id'}"
+                            groups="base.group_multi_company"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- =========================== VISTA DE FORMULARIO =========================== -->
+    <record id="purchase_request_form" model="ir.ui.view">
+        <field name="name">purchase.request.form</field>
+        <field name="model">purchase.request</field>
+        <field name="arch" type="xml">
+            <form string="Solicitud de Insumos">
+                <header>
+                    <!-- Botones de estado -->
+                    <button name="action_close" string="Cerrar lista"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"
+                            confirm="¿Está seguro de cerrar la lista? No se podrán agregar más líneas."/>
+                    <button name="action_reopen" string="Reabrir lista"
+                            type="object"
+                            invisible="state != 'in_progress'"
+                            confirm="¿Reabrir la lista? Se podrán agregar más líneas."/>
+                    <button name="action_cancel" string="Cancelar solicitud"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state in ('done','cancel')"
+                            confirm="¿Cancelar esta solicitud? Se cancelarán las líneas pendientes y se ajustarán las órdenes de compra relacionadas."/>
+                    <button name="action_open_add_to_rfq_wizard"
+                            string="Agregar a RFQ"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state in ('done','cancel')"
+                            help="Crear una nueva RFQ o agregar líneas a una existente"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,in_progress,done,cancel"
+                           statusbar_colors='{"done":"success","cancel":"danger"}'
+                    />
+                </header>
+
+                <sheet>
+                    <!-- Smart buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_purchase_request_line" type="object"
+                                class="oe_stat_button"
+                                icon="fa-list"
+                                invisible="line_count == 0"
+                                string="Líneas">
+                            <field name="line_count" widget="statinfo" string="Líneas"/>
+                        </button>
+                        <button name="action_view_purchase_order" type="object"
+                                class="oe_stat_button"
+                                icon="fa-shopping-cart"
+                                invisible="purchase_count == 0"
+                                string="Órdenes">
+                            <field name="purchase_count" widget="statinfo" string="Cotizaciones"/>
+                        </button>
+                        <button name="action_view_stock_picking" type="object"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                invisible="move_count == 0"
+                                groups="stock.group_stock_manager"
+                                string="Recepciones">
+                            <field name="move_count" widget="statinfo" string="Pickings"/>
+                        </button>
+                    </div>
+
+                    <!-- Encabezado -->
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nueva solicitud"/>
+                        </h1>
+                    </div>
+
+                    <!-- Alertas según estado -->
+                    <div class="alert alert-info text-center" role="alert"
+                         invisible="state != 'draft' or not id">
+                        <i class="fa fa-info-circle" title="Información"/>
+                        Solicitud activa. Puede agregar productos desde requisiciones o reabastecimiento.
+                    </div>
+                    <div class="alert alert-warning text-center" role="alert"
+                         invisible="state != 'in_progress'">
+                        <i class="fa fa-lock" title="Bloqueada"/>
+                        Solicitud en proceso. No se pueden agregar más líneas.
+                    </div>
+                    <div class="alert alert-success text-center" role="alert"
+                         invisible="state != 'done'">
+                        <i class="fa fa-check-circle" title="Completada"/>
+                        Solicitud completada. Todas las líneas han sido compradas.
+                    </div>
+                    <div class="alert alert-danger text-center" role="alert"
+                         invisible="state != 'cancel'">
+                        <i class="fa fa-times-circle" title="Cancelada"/>
+                        Solicitud cancelada.
+                    </div>
+
+                    <!-- Campos principales -->
+                    <group>
+                        <group>
+                            <field name="requested_by" readonly="state != 'draft'"/>
+                            <field name="origin" readonly="state != 'draft'"/>
+                            <field name="description" readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="date_start" readonly="state != 'draft'"/>
+                            <field name="picking_type_id" readonly="state != 'draft'" required="1"/>
+                            <field name="group_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"
+                                   widget="selection" readonly="state != 'draft'"/>
+                        </group>
+                    </group>
+
+                    <!-- Notebook con líneas -->
+                    <notebook>
+                        <page string="Productos" name="products">
+                            <field name="line_ids" nolabel="1" mode="tree,kanban"
+                                   context="{'default_priority': 'normal'}">
+                                <tree editable="bottom"
+                                      decoration-muted="line_state in ('cancel')"
+                                      decoration-info="line_state in ('pending','in_progress')"
+                                      decoration-warning="line_state == 'to_receive'"
+                                      decoration-success="line_state in ('partially_purchased','purchased')"
+                                >
+                                    <field name="line_state" widget="badge"
+                                           decoration-muted="line_state == 'cancel'"
+                                           decoration-info="line_state in ('pending','in_progress')"
+                                           decoration-warning="line_state == 'to_receive'"
+                                           decoration-success="line_state in ('partially_purchased','purchased')"/>
+                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="product_uom_category_id" invisible="1"/>
+                                    <field name="product_uom_id" groups="uom.group_uom" options="{'no_create': True}"/>
+                                    <field name="product_qty" sum="Total"/>
+                                    <field name="date_required"/>
+                                    <field name="priority" widget="badge"
+                                           decoration-warning="priority == 'urgent'"/>
+                                    <field name="project_id" optional="hide"/>
+                                    <field name="task_id" optional="hide"/>
+                                    <field name="is_replenishment" invisible="1"/>
+                                    <field name="pending_qty_to_buy" optional="hide"/>
+                                    <field name="qty_in_progress" optional="hide"/>
+                                    <field name="qty_done" optional="hide"/>
+                                    <field name="purchase_state" optional="hide"/>
+<!--                                    <button name="action_show_details" type="object"-->
+<!--                                            icon="fa-external-link" title="Ver detalle"/>-->
+                                </tree>
+
+                                <!-- Kanban para dispositivos móviles (estructura corregida) -->
+                                <kanban class="o_kanban_mobile" create="false" delete="false">
+                                    <!-- Campos necesarios para el renderizado -->
+                                    <field name="product_id"/>
+                                    <field name="product_qty"/>
+                                    <field name="product_uom_id"/>
+                                    <field name="date_required"/>
+                                    <field name="priority"/>
+                                    <field name="line_state"/>
+                                    <templates>
+                                        <t t-name="kanban-box">
+                                            <div t-attf-class="oe_kanban_card oe_kanban_global_click">
+                                                <div class="row">
+                                                    <div class="col-8">
+                                                        <strong><field name="product_id"/></strong>
+                                                        <div class="text-muted small">
+                                                            <field name="line_state" widget="badge"/>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-4 text-end">
+                                                        <span class="badge rounded-pill text-bg-secondary">
+                                                            <field name="product_qty"/> <field name="product_uom_id"/>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-2">
+                                                    <div class="col-6 text-muted">
+                                                        <i class="fa fa-calendar-o" title="Fecha"/>
+                                                        <field name="date_required"/>
+                                                    </div>
+                                                    <div class="col-6 text-end">
+                                                        <field name="priority" widget="badge"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <!-- Chatter -->
+                <div class="oe_chatter">
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- =========================== MENÚS =========================== -->
+    <record id="action_purchase_request_form" model="ir.actions.act_window">
+        <field name="name">Solicitudes de Insumos</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_purchase_request_search"/>
+        <field name="context">{"search_default_my_requests": 1}</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">
+                Haga clic para crear una nueva Solicitud de Insumos.
+            </p>
+            <p>
+                Las solicitudes de insumos permiten agrupar productos desde
+                requisiciones de empleados o reabastecimiento para su posterior
+                compra.
+            </p>
+        </field>
+    </record>
+
+</odoo>
