@@ -44,7 +44,7 @@
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
-        <field name="domain_force">[('requested_by','=',user.id)]</field>
+        <field name="domain_force">[('purchaser','=',user.id)]</field>
     </record>
 
     <!-- Regla de manager: acceso total -->
@@ -78,7 +78,7 @@
         <field name="perm_write" eval="True"/>
         <field name="perm_create" eval="True"/>
         <field name="perm_unlink" eval="True"/>
-        <field name="domain_force">[('request_id.requested_by','=',user.id)]</field>
+        <field name="domain_force">[('request_id.purchaser','=',user.id)]</field>
     </record>
 
     <!-- Regla de manager: acceso total a líneas -->
@@ -111,7 +111,7 @@
         <field name="perm_write" eval="False"/>
         <field name="perm_create" eval="False"/>
         <field name="perm_unlink" eval="False"/>
-        <field name="domain_force">[('purchase_request_line_id.request_id.requested_by','=',user.id)]</field>
+        <field name="domain_force">[('purchase_request_line_id.request_id.purchaser','=',user.id)]</field>
     </record>
 
     <!-- Regla de manager: acceso total a asignaciones -->

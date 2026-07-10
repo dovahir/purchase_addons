@@ -15,22 +15,22 @@
                 decoration-success="line_state in ('partially_purchased','purchased')"
             >
                 <field name="request_id" string="Solicitud"/>
+                <field name="priority" widget="badge" optional="show"
+                       decoration-warning="priority == 'urgent'"/>
                 <field name="line_state" widget="badge"
                        decoration-muted="line_state == 'cancel'"
                        decoration-info="line_state in ('pending','in_progress')"
                        decoration-warning="line_state == 'to_receive'"
                        decoration-success="line_state in ('partially_purchased','purchased')"/>
                 <field name="product_id" string="Producto" options="{'no_create': True}"/>
-                <field name="product_qty" string="Cantidad" sum="Total"/>
+                <field name="product_qty" string="Cant. Solicitada" sum="Total"/>
                 <field name="product_uom_id" string="UoM" groups="uom.group_uom" options="{'no_create': True}"/>
+                <field name="supplier_id" string="Proveedor preferido" optional="hide"/>
+                <field name="project_id" string="Proyecto" optional="show"/>
+                <field name="task_id" string="Tarea" optional="show"/>
                 <field name="date_required" string="Fecha requerida"/>
-                <field name="supplier_id" string="Proveedor preferido" optional="show"/>
-                <field name="project_id" string="Proyecto" optional="hide"/>
-                <field name="task_id" string="Tarea" optional="hide"/>
-                <field name="priority" widget="badge" optional="show"
-                       decoration-warning="priority == 'urgent'"/>
-                <field name="is_replenishment" string="Reabastecimiento" optional="hide" widget="boolean"/>
-                <field name="purchase_state" string="Estado de compra" optional="hide" widget="badge"/>
+                <field name="is_replenishment" string="Reabastecimiento" optional="show" widget="boolean"/>
+                <field name="purchase_state" string="Estado de compra" optional="show" widget="badge"/>
                 <field name="pending_qty_to_buy" string="Pendiente comprar" optional="hide"/>
                 <field name="qty_in_progress" string="En proceso" optional="hide"/>
                 <field name="qty_done" string="Recibido" optional="hide"/>
@@ -62,7 +62,7 @@
                 <filter name="state_purchased" string="Comprados" domain="[('line_state','=','purchased')]"/>
                 <filter name="state_cancel" string="Cancelados" domain="[('line_state','=','cancel')]"/>
                 <separator/>
-                <filter name="my_requests" string="Mis solicitudes" domain="[('request_id.requested_by','=',uid)]"/>
+                <filter name="my_requests" string="Mis solicitudes" domain="[('request_id.purchaser','=',uid)]"/>
                 <filter name="qty_to_buy" string="Pendiente de comprar" domain="[('pending_qty_to_buy','>',0)]"/>
                 <filter name="all_bought" string="Totalmente comprados" domain="[('pending_qty_to_buy','=',0)]"/>
                 <filter name="open_qty" string="Con cantidad en proceso" domain="[('qty_in_progress','>',0)]"/>
@@ -126,16 +126,11 @@
 
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Descripción del producto"/>
+                            <field name="name" placeholder="Descripción del producto" readonly="1"/>
                         </h1>
                     </div>
 
                     <group name="main">
-                        <group name="info">
-                            <field name="request_id" readonly="1"/>
-                            <field name="origin" readonly="1"/>
-                            <field name="company_id" groups="base.group_multi_company" widget="selection" readonly="1"/>
-                        </group>
                         <group name="settings">
                             <field name="product_id" readonly="line_state != 'draft'"/>
                             <field name="product_uom_category_id" invisible="1"/>
@@ -149,6 +144,12 @@
                             <field name="requisition_product_id" readonly="1"
                                    invisible="not requisition_product_id"
                                    help="Línea de requisición origen"/>
+                            <field name="note" readonly="line_state != 'draft'"/>
+                        </group>
+                        <group name="info">
+                            <field name="request_id" readonly="1"/>
+                            <field name="origin" readonly="1"/>
+                            <field name="company_id" groups="base.group_multi_company" widget="selection" readonly="1"/>
                         </group>
                     </group>
 
@@ -181,20 +182,20 @@
                                             'tree_view_ref': 'purchase_addons.purchase_order_line_tree_sub',
                                             'search_view_ref': 'purchase_addons.purchase_order_line_search_sub'}"/>
                         </page>
-                        <page name="allocations" string="Asignaciones">
-                            <field name="purchase_request_allocation_ids" nolabel="1">
-                                <tree decoration-muted="purchase_state == 'cancel'">
-                                    <field name="stock_move_id" string="Movimiento"/>
-                                    <field name="purchase_line_id" string="Línea de compra"/>
-                                    <field name="product_id" string="Producto"/>
-                                    <field name="requested_product_uom_qty" string="Solicitado"/>
-                                    <field name="allocated_product_qty" string="Asignado"/>
-                                    <field name="open_product_qty" string="Pendiente"/>
-                                    <field name="product_uom_id" string="UoM"/>
-                                    <field name="purchase_state" string="Estado compra" invisible="1"/>
-                                </tree>
-                            </field>
-                        </page>
+<!--                        <page name="allocations" string="Asignaciones">-->
+<!--                            <field name="purchase_request_allocation_ids" nolabel="1">-->
+<!--                                <tree decoration-muted="purchase_state == 'cancel'">-->
+<!--                                    <field name="stock_move_id" string="Movimiento"/>-->
+<!--                                    <field name="purchase_line_id" string="Línea de compra"/>-->
+<!--                                    <field name="product_id" string="Producto"/>-->
+<!--                                    <field name="requested_product_uom_qty" string="Solicitado"/>-->
+<!--                                    <field name="allocated_product_qty" string="Asignado"/>-->
+<!--                                    <field name="open_product_qty" string="Pendiente"/>-->
+<!--                                    <field name="product_uom_id" string="UoM"/>-->
+<!--                                    <field name="purchase_state" string="Estado compra" invisible="1"/>-->
+<!--                                </tree>-->
+<!--                            </field>-->
+<!--                        </page>-->
                     </notebook>
                 </sheet>
 
@@ -229,7 +230,7 @@
 <!--                            <field name="analytic_distribution" widget="analytic_distribution"-->
 <!--                                   groups="analytic.group_analytic_accounting"-->
 <!--                                   readonly="line_state != 'draft'"/>-->
-<!--                            <field name="specifications" readonly="line_state != 'draft'"/>-->
+<!--                            <field name="note" readonly="line_state != 'draft'"/>-->
 <!--                        </group>-->
 <!--                    </group>-->
 <!--                    <group name="quantities" string="Seguimiento">-->

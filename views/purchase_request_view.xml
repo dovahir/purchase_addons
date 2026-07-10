@@ -26,8 +26,8 @@
                 name="Solicitudes de Insumos"
             >
                 <field name="name" string="Referencia"/>
-                <field name="date_start" string="Fecha de creación"/>
-                <field name="requested_by" widget="many2one_avatar_user" string="Solicitante"/>
+                <field name="create_date" string="Fecha de creación"/>
+                <field name="purchaser" widget="many2one_avatar_user"/>
                 <field name="origin" string="Origen" optional="show"/>
                 <field name="company_id" groups="base.group_multi_company" widget="selection" optional="show"/>
                 <field name="line_count" string="Líneas" optional="show" sum="Total"/>
@@ -36,7 +36,6 @@
                        decoration-muted="state == 'cancel'"
                        decoration-info="state in ('draft','in_progress')"
                        decoration-success="state == 'done'"/>
-                <field name="activity_ids" widget="list_activity" optional="show"/>
             </tree>
         </field>
     </record>
@@ -49,9 +48,9 @@
             <search string="Buscar Solicitudes">
                 <field name="name" string="Referencia" filter_domain="[('name','ilike',self)]"/>
                 <field name="origin" string="Origen" filter_domain="[('origin','ilike',self)]"/>
-                <field name="requested_by" string="Solicitante"/>
+                <field name="purchaser"/>
 <!--                <field name="product_id" string="Producto" filter_domain="[('line_ids.product_id','ilike',self)]"/>-->
-                <field name="picking_type_id" string="Tipo de operación"/>
+                <field name="picking_type_id"/>
 
                 <separator/>
                 <filter name="state_draft" string="Activa" domain="[('state','=','draft')]"/>
@@ -59,12 +58,12 @@
                 <filter name="state_done" string="Completada" domain="[('state','=','done')]"/>
                 <filter name="state_cancel" string="Cancelada" domain="[('state','=','cancel')]"/>
                 <separator/>
-                <filter name="my_requests" string="Mis solicitudes" domain="[('requested_by','=',uid)]"/>
+                <filter name="my_requests" string="Mis solicitudes" domain="[('purchaser','=',uid)]"/>
 
                 <group expand="0" string="Agrupar por">
                     <filter name="group_state" string="Estado" context="{'group_by':'state'}"/>
-                    <filter name="group_requested_by" string="Solicitante" context="{'group_by':'requested_by'}"/>
-                    <filter name="group_date_start" string="Fecha de creación" context="{'group_by':'date_start'}"/>
+                    <filter name="group_purchaser" context="{'group_by':'purchaser'}"/>
+<!--                    <filter name="group_date_create" string="Fecha de creación" context="{'group_by':'date_create'}"/>-->
                     <filter name="group_company" string="Compañía" context="{'group_by':'company_id'}"
                             groups="base.group_multi_company"/>
                 </group>
@@ -80,6 +79,12 @@
             <form string="Solicitud de Insumos">
                 <header>
                     <!-- Botones de estado -->
+                    <button name="action_open_add_to_rfq_wizard"
+                            string="Añadir/Crear RFQ"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state in ('done','cancel')"
+                            help="Crear una nueva RFQ o agregar líneas a una existente"/>
                     <button name="action_close" string="Cerrar lista"
                             type="object"
                             class="oe_highlight"
@@ -94,12 +99,6 @@
                             class="btn-danger"
                             invisible="state in ('done','cancel')"
                             confirm="¿Cancelar esta solicitud? Se cancelarán las líneas pendientes y se ajustarán las órdenes de compra relacionadas."/>
-                    <button name="action_open_add_to_rfq_wizard"
-                            string="Agregar a RFQ"
-                            type="object"
-                            class="oe_highlight"
-                            invisible="state in ('done','cancel')"
-                            help="Crear una nueva RFQ o agregar líneas a una existente"/>
 
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,in_progress,done,cancel"
@@ -110,13 +109,13 @@
                 <sheet>
                     <!-- Smart buttons -->
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_purchase_request_line" type="object"
-                                class="oe_stat_button"
-                                icon="fa-list"
-                                invisible="line_count == 0"
-                                string="Líneas">
-                            <field name="line_count" widget="statinfo" string="Líneas"/>
-                        </button>
+<!--                        <button name="action_view_purchase_request_line" type="object"-->
+<!--                                class="oe_stat_button"-->
+<!--                                icon="fa-list"-->
+<!--                                invisible="line_count == 0"-->
+<!--                                string="Líneas">-->
+<!--                            <field name="line_count" widget="statinfo" string="Líneas"/>-->
+<!--                        </button>-->
                         <button name="action_view_purchase_order" type="object"
                                 class="oe_stat_button"
                                 icon="fa-shopping-cart"
@@ -166,23 +165,20 @@
                     <!-- Campos principales -->
                     <group>
                         <group>
-                            <field name="requested_by" readonly="state != 'draft'"/>
+                            <field name="purchaser" readonly="1"/>
                             <field name="origin" readonly="state != 'draft'"/>
-                            <field name="description" readonly="state != 'draft'"/>
                         </group>
                         <group>
-                            <field name="date_start" readonly="state != 'draft'"/>
+                            <field name="create_date" readonly="1"/>
                             <field name="picking_type_id" readonly="state != 'draft'" required="1"/>
-                            <field name="group_id" readonly="state != 'draft'" options="{'no_create': True}"/>
-                            <field name="company_id" groups="base.group_multi_company"
-                                   widget="selection" readonly="state != 'draft'"/>
                         </group>
+                        <field name="description" readonly="state != 'draft'"/>
                     </group>
 
                     <!-- Notebook con líneas -->
                     <notebook>
                         <page string="Productos" name="products">
-                            <field name="line_ids" nolabel="1" mode="tree,kanban"
+                            <field name="line_ids" nolabel="1" mode="tree"
                                    context="{'default_priority': 'normal'}">
                                 <tree editable="bottom"
                                       decoration-muted="line_state in ('cancel')"
@@ -190,70 +186,36 @@
                                       decoration-warning="line_state == 'to_receive'"
                                       decoration-success="line_state in ('partially_purchased','purchased')"
                                 >
+                                    <field name="priority" widget="badge"
+                                           decoration-warning="priority == 'urgent'"/>
                                     <field name="line_state" widget="badge"
                                            decoration-muted="line_state == 'cancel'"
                                            decoration-info="line_state in ('pending','in_progress')"
                                            decoration-warning="line_state == 'to_receive'"
                                            decoration-success="line_state in ('partially_purchased','purchased')"/>
                                     <field name="product_id" options="{'no_create': True}"/>
-                                    <field name="product_uom_category_id" invisible="1"/>
+                                    <field name="product_qty" sum="Total" string="Cant. Solicitada"/>
+                                    <field name="product_uom_category_id" column_invisible="1"/>
                                     <field name="product_uom_id" groups="uom.group_uom" options="{'no_create': True}"/>
-                                    <field name="product_qty" sum="Total"/>
-                                    <field name="date_required"/>
-                                    <field name="priority" widget="badge"
-                                           decoration-warning="priority == 'urgent'"/>
-                                    <field name="project_id" optional="hide"/>
-                                    <field name="task_id" optional="hide"/>
-                                    <field name="is_replenishment" invisible="1"/>
+                                    <field name="project_id" optional="show"/>
+                                    <field name="task_id" optional="show"/>
+                                    <field name="date_required" optional="show"/>
+                                    <field name="is_replenishment" column_invisible="1"/>
                                     <field name="pending_qty_to_buy" optional="hide"/>
                                     <field name="qty_in_progress" optional="hide"/>
                                     <field name="qty_done" optional="hide"/>
-                                    <field name="purchase_state" optional="hide"/>
+                                    <field name="purchase_state" optional="show"/>
 <!--                                    <button name="action_show_details" type="object"-->
 <!--                                            icon="fa-external-link" title="Ver detalle"/>-->
                                 </tree>
-
-                                <!-- Kanban para dispositivos móviles (estructura corregida) -->
-                                <kanban class="o_kanban_mobile" create="false" delete="false">
-                                    <!-- Campos necesarios para el renderizado -->
-                                    <field name="product_id"/>
-                                    <field name="product_qty"/>
-                                    <field name="product_uom_id"/>
-                                    <field name="date_required"/>
-                                    <field name="priority"/>
-                                    <field name="line_state"/>
-                                    <templates>
-                                        <t t-name="kanban-box">
-                                            <div t-attf-class="oe_kanban_card oe_kanban_global_click">
-                                                <div class="row">
-                                                    <div class="col-8">
-                                                        <strong><field name="product_id"/></strong>
-                                                        <div class="text-muted small">
-                                                            <field name="line_state" widget="badge"/>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-4 text-end">
-                                                        <span class="badge rounded-pill text-bg-secondary">
-                                                            <field name="product_qty"/> <field name="product_uom_id"/>
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="row mt-2">
-                                                    <div class="col-6 text-muted">
-                                                        <i class="fa fa-calendar-o" title="Fecha"/>
-                                                        <field name="date_required"/>
-                                                    </div>
-                                                    <div class="col-6 text-end">
-                                                        <field name="priority" widget="badge"/>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </t>
-                                    </templates>
-                                </kanban>
                             </field>
                         </page>
                     </notebook>
+                    <group>
+                        <field name="group_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                        <field name="company_id" groups="base.group_multi_company"
+                               widget="selection" readonly="1"/>
+                    </group>
                 </sheet>
 
                 <!-- Chatter -->

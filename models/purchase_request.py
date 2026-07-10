@@ -21,11 +21,8 @@ class PurchaseRequest(models.Model):
     def _company_get(self):
         return self.env['res.company'].browse(self.env.company.id)
 
-    def _get_default_requested_by(self):
+    def _get_default_purchaser(self):
         return self.env['res.users'].browse(self.env.uid)
-
-    def _get_default_name(self):
-        return self.env['ir.sequence'].next_by_code('seq_purchase_request') or _('New')
 
     def _default_picking_type(self):
         type_obj = self.env['stock.picking.type']
@@ -40,33 +37,34 @@ class PurchaseRequest(models.Model):
         return types[:1]
 
     # =========================== Campos ===========================
-    name = fields.Char(
-        string='Referencia',
-        required=True,
-        default=_get_default_name,
-        tracking=True,
+    name = fields.Char(string='Solicitud',
+                       required=True,
+                       default=lambda self: _('Solicitud'),
+                       tracking=True,
+                       readonly=True,
+                       copy=False, index=True,
     )
     origin = fields.Char(
         string='Origen',
         help='Documento o proceso que origina la solicitud',
         tracking=True,
     )
-    date_start = fields.Date(
-        string='Fecha de creación',
-        default=fields.Date.context_today,
-        tracking=True,
-    )
-    requested_by = fields.Many2one(
+    # date_start = fields.Date(
+    #     string='Fecha de creación',
+    #     default=fields.Date.context_today,
+    #     tracking=True,
+    # )
+    purchaser = fields.Many2one(
         comodel_name='res.users',
-        string='Solicitante',
+        string='Comprador',
         required=True,
         copy=False,
         tracking=True,
-        default=_get_default_requested_by,
+        default=_get_default_purchaser,
         index=True,
     )
     description = fields.Text(
-        string='Descripción',
+        string='Notas',
         tracking=True,
     )
     company_id = fields.Many2one(
@@ -95,7 +93,7 @@ class PurchaseRequest(models.Model):
     )
     picking_type_id = fields.Many2one(
         comodel_name='stock.picking.type',
-        string='Tipo de operación',
+        string='Entregar en',
         required=True,
         default=_default_picking_type,
     )
@@ -203,19 +201,19 @@ class PurchaseRequest(models.Model):
                 )
 
     # =========================== Métodos de vista ===========================
-    def action_view_purchase_request_line(self):
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id(
-            'purchase_addons.action_purchase_request_line_form'
-        )
-        lines = self.mapped('line_ids')
-        if len(lines) > 1:
-            action['domain'] = [('id', 'in', lines.ids)]
-        elif lines:
-            action['views'] = [(self.env.ref('purchase_addons.purchase_request_line_form').id, 'form')]
-            action['view_mode'] = 'form'
-            action['res_id'] = lines.id
-        return action
+    # def action_view_purchase_request_line(self):
+    #     self.ensure_one()
+    #     action = self.env['ir.actions.actions']._for_xml_id(
+    #         'purchase_addons.action_purchase_request_line_form'
+    #     )
+    #     lines = self.mapped('line_ids')
+    #     if len(lines) > 1:
+    #         action['domain'] = [('id', 'in', lines.ids)]
+    #     elif lines:
+    #         action['views'] = [(self.env.ref('purchase_addons.purchase_request_line_form').id, 'form')]
+    #         action['view_mode'] = 'form'
+    #         action['res_id'] = lines.id
+    #     return action
 
     def action_view_purchase_order(self):
         self.ensure_one()
@@ -249,8 +247,7 @@ class PurchaseRequest(models.Model):
         self.ensure_one()
         default.update({
             'state': 'draft',
-            'name': self._get_default_name(),
-            'date_start': fields.Date.today(),
+            # 'date_start': fields.Date.today(),
         })
         return super().copy(default)
 
@@ -265,8 +262,8 @@ class PurchaseRequest(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('name', _('New')) == _('New'):
-                vals['name'] = self._get_default_name()
+            if vals.get('name', _('Nueva solicitud')) == _('Nueva solicitud'):
+                vals['name'] = (self.env['ir.sequence'].next_by_code('purchase.request'))
         return super().create(vals_list)
 
     def action_open_add_to_rfq_wizard(self):
