@@ -79,13 +79,13 @@ class PurchaseRequestLine(models.Model):
     note = fields.Text(
         string='Especificaciones',
     )
-    supplier_id = fields.Many2one(
-        comodel_name='res.partner',
-        string='Proveedor preferido',
-        compute='_compute_supplier_id',
-        compute_sudo=True,
-        store=True,
-    )
+    # supplier_id = fields.Many2one(
+    #     comodel_name='res.partner',
+    #     string='Proveedor preferido',
+    #     compute='_compute_supplier_id',
+    #     compute_sudo=True,
+    #     store=True,
+    # )
     origin = fields.Char(
         string='Origen',
         help='Documento o proceso que origina la solicitud',
@@ -187,13 +187,13 @@ class PurchaseRequestLine(models.Model):
     )
 
     # =========================== Computed ===========================
-    @api.depends('product_id', 'product_id.seller_ids')
-    def _compute_supplier_id(self):
-        for rec in self:
-            sellers = rec.product_id.seller_ids.filtered(
-                lambda si: not si.company_id or si.company_id == rec.company_id
-            )
-            rec.supplier_id = sellers[0].partner_id if sellers else False
+    # @api.depends('product_id', 'product_id.seller_ids')
+    # def _compute_supplier_id(self):
+    #     for rec in self:
+    #         sellers = rec.product_id.seller_ids.filtered(
+    #             lambda si: not si.company_id or si.company_id == rec.company_id
+    #         )
+    #         rec.supplier_id = sellers[0].partner_id if sellers else False
 
     @api.depends('purchase_lines.state', 'purchase_lines.order_id.state')
     def _compute_purchase_state(self):

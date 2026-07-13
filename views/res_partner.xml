@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="inherit_partners_form_view" model="ir.ui.view">
+            <field name="name">res.partner.form</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[@name='internal_notes']" position="after">
+                    <page name="products" string="Productos">
+                        <field name="seller_ids">
+                            <tree editable="bottom" string="Proveedores">
+                                <field name="company_id" column_invisible="1"/>
+                                <field name="product_tmpl_id" string="Producto" required="1"/>
+                                <field name="product_id" string="Variante" invisible="not product_tmpl_id"/>
+                                <field name="min_qty" string="Cantidad mínima"/>
+                                <field name="price" string="Precio"/>
+                                <field name="delay" string="Plazo (días)" default="1"/>
+                            </tree>
+                        </field>
+                    </page>
+
+<!--                    <page name="requisitions" string="Órdenes abiertas">-->
+<!--                        <field name="requisition_ids">-->
+<!--                            <tree string="Órdenes generales" default_order="create_date desc">-->
+<!--                                <field name="name" string="Nº Orden"/>-->
+<!--&lt;!&ndash;                                <field name="state" string="Estado" widget="badge"/>&ndash;&gt;-->
+<!--                                <field name="type_id" string="Tipo"/>-->
+<!--                                <field name="date_end" string="Fecha límite"/>-->
+<!--&lt;!&ndash;                                <field name="amount_total" string="Total" sum="Total"/>&ndash;&gt;-->
+<!--                                <field name="user_id" string="Representante"/>-->
+<!--                            </tree>-->
+<!--                        </field>-->
+<!--                    </page>-->
+
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

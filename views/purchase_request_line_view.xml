@@ -25,7 +25,7 @@
                 <field name="product_id" string="Producto" options="{'no_create': True}"/>
                 <field name="product_qty" string="Cant. Solicitada" sum="Total"/>
                 <field name="product_uom_id" string="UoM" groups="uom.group_uom" options="{'no_create': True}"/>
-                <field name="supplier_id" string="Proveedor preferido" optional="hide"/>
+<!--                <field name="supplier_id" string="Proveedor preferido" optional="hide"/>-->
                 <field name="project_id" string="Proyecto" optional="show"/>
                 <field name="task_id" string="Tarea" optional="show"/>
                 <field name="date_required" string="Fecha requerida"/>
@@ -51,7 +51,7 @@
                 <field name="product_id" string="Producto" filter_domain="[('product_id','=',self)]"/>
                 <field name="project_id" string="Proyecto"/>
                 <field name="task_id" string="Tarea"/>
-                <field name="supplier_id" string="Proveedor"/>
+<!--                <field name="supplier_id" string="Proveedor"/>-->
                 <field name="analytic_distribution" groups="analytic.group_analytic_accounting"/>
 
                 <separator/>
@@ -74,7 +74,7 @@
                     <filter name="group_state" string="Estado" context="{'group_by':'line_state'}"/>
                     <filter name="group_project" string="Proyecto" context="{'group_by':'project_id'}"/>
                     <filter name="group_priority" string="Prioridad" context="{'group_by':'priority'}"/>
-                    <filter name="group_supplier" string="Proveedor" context="{'group_by':'supplier_id'}"/>
+<!--                    <filter name="group_supplier" string="Proveedor" context="{'group_by':'supplier_id'}"/>-->
                     <filter name="group_purchase_state" string="Estado de compra" context="{'group_by':'purchase_state'}"/>
                 </group>
             </search>
@@ -138,7 +138,7 @@
                             <field name="note" nolabel="1" readonly="line_state != 'draft'"/>
                             <field name="product_qty" readonly="line_state != 'draft'"/>
                             <field name="date_required" readonly="line_state != 'draft'"/>
-                            <field name="supplier_id" readonly="1"/>
+<!--                            <field name="supplier_id" readonly="1"/>-->
                             <field name="priority" widget="badge" readonly="line_state != 'draft'"/>
                             <field name="is_replenishment" widget="boolean" readonly="1"/>
                             <field name="requisition_product_id" readonly="1"
