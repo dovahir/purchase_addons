@@ -6,14 +6,19 @@
         <field name="name">purchase.request.line.tree</field>
         <field name="model">purchase.request.line</field>
         <field name="arch" type="xml">
-            <tree
-                name="Líneas de Solicitud"
-                create="false"
-                decoration-muted="line_state in ('cancel')"
-                decoration-info="line_state in ('pending','in_progress')"
-                decoration-warning="line_state == 'to_receive'"
-                decoration-success="line_state in ('partially_purchased','purchased')"
-            >
+            <tree name="Líneas de Solicitud"
+                  create="false"
+                  decoration-muted="line_state in ('cancel')"
+                  decoration-info="line_state in ('pending','in_progress')"
+                  decoration-warning="line_state == 'to_receive'"
+                  decoration-success="line_state in ('partially_purchased','purchased')">
+                <header>
+                    <button name="action_open_send_email_wizard"
+                            string="Enviar correo"
+                            type="object"
+                            icon="fa-envelope"
+                            class="btn-primary"/>
+                </header>
                 <field name="request_id" string="Solicitud"/>
                 <field name="priority" widget="badge" optional="show"
                        decoration-warning="priority == 'urgent'"/>
@@ -182,6 +187,17 @@
                                             'tree_view_ref': 'purchase_addons.purchase_order_line_tree_sub',
                                             'search_view_ref': 'purchase_addons.purchase_order_line_search_sub'}"/>
                         </page>
+
+                        <page name="email_logs" string="Envíos de cotización">
+                            <field name="email_log_ids" nolabel="1">
+                                <tree>
+                                    <field name="date_sent"/>
+                                    <field name="partner_id"/>
+                                    <field name="email_to"/>
+                                    <field name="subject"/>
+                                </tree>
+                            </field>
+                        </page>
 <!--                        <page name="allocations" string="Asignaciones">-->
 <!--                            <field name="purchase_request_allocation_ids" nolabel="1">-->
 <!--                                <tree decoration-muted="purchase_state == 'cancel'">-->
@@ -278,6 +294,18 @@
         <field name="binding_model_id" ref="product.model_product_product"/>
         <field name="context">{'search_default_product_id': active_id}</field>
     </record>
+
+<!--    <record id="action_purchase_request_line_send_email" model="ir.actions.act_window">-->
+<!--        <field name="name">Enviar cotización por correo</field>-->
+<!--        <field name="type">ir.actions.act_window</field>-->
+<!--        <field name="res_model">purchase.request.send.email.wizard</field>-->
+<!--        <field name="view_mode">form</field>-->
+<!--        <field name="target">new</field>-->
+<!--        <field name="binding_model_id" ref="purchase_addons.model_purchase_request_line"/>-->
+<!--        <field name="binding_type">action</field>-->
+<!--        &lt;!&ndash; En Odoo 17 simplificamos el contexto: active_model y active_ids viajan de forma nativa por el binding &ndash;&gt;-->
+<!--        <field name="context">{'default_active_model': 'purchase.request.line'}</field>-->
+<!--    </record>-->
 
     <!-- =========================== SUB-VISTAS PARA PO LINES =========================== -->
     <record id="purchase_order_line_form_sub" model="ir.ui.view">

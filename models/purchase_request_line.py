@@ -186,6 +186,14 @@ class PurchaseRequestLine(models.Model):
         store=True,
     )
 
+    email_log_ids = fields.One2many(
+        comodel_name='purchase.request.line.email.log',
+        inverse_name='line_id',
+        string='Envíos de cotización',
+        readonly=True,
+        copy=False,
+    )
+
     # =========================== Computed ===========================
     # @api.depends('product_id', 'product_id.seller_ids')
     # def _compute_supplier_id(self):
@@ -395,3 +403,28 @@ class PurchaseRequestLine(models.Model):
                     body=_('Línea %s agregada.') % (line.name or line.product_id.display_name),
                 )
         return lines
+
+    def action_open_send_email_wizard(self):
+        """Abre el wizard de envío de correo desde el tree de líneas."""
+        wizard = self.env['purchase.request.send.email.wizard'].create({
+            'line_ids': [
+                (0, 0, {
+                    'request_line_id': line.id,
+                    'selected': True,
+                    'product_id': line.product_id.id,
+                    'product_qty': line.pending_qty_to_receive or line.product_qty,
+                    'uom_id': line.product_uom_id.id,
+                    'note': line.note,
+                }) for line in self.filtered(
+                    lambda l: l.line_state in ('pending', 'in_progress')
+                )
+            ]
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Enviar cotización por correo'),
+            'res_model': 'purchase.request.send.email.wizard',
+            'res_id': wizard.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }

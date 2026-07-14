@@ -131,6 +131,12 @@
                                 string="Recepciones">
                             <field name="move_count" widget="statinfo" string="Pickings"/>
                         </button>
+                        <button name="action_open_send_email_wizard"
+                                string="Enviar cotización por correo"
+                                type="object"
+                                class="oe_highlight"
+                                invisible="state not in ['draft', 'in_progress']"
+                                help="Enviar cotización de productos seleccionados al proveedor"/>
                     </div>
 
                     <!-- Encabezado -->

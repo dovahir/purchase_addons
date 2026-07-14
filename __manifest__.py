@@ -32,6 +32,9 @@
         # Datos
         'data/purchase_request_sequence.xml',
 
+        # Reportes
+        'reports/purchase_request_email_report.xml',
+
         # Wizards
         'wizard/requi_purchase_request_wizard_view.xml',
         'wizard/replenish_purchase_request_wizard_view.xml',
@@ -46,6 +49,7 @@
         'views/replenishment_base_view.xml',
         'views/menu_views.xml',
 		'views/purchase_requisition_view.xml',
+		'wizard/purchase_request_send_email_wizard_view.xml',
 ],
     'installable': True,
     'application': True,
