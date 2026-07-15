@@ -2,7 +2,6 @@
 
 <odoo>
     <!-- =========================== ACCIONES Y MENÚS =========================== -->
-    <!-- Acción para agregar a RFQ desde el form (binding a purchase.request) -->
     <record id="action_purchase_request_add_to_rfq" model="ir.actions.act_window">
         <field name="name">Agregar a RFQ</field>
         <field name="type">ir.actions.act_window</field>
@@ -11,7 +10,6 @@
         <field name="target">new</field>
         <field name="binding_model_id" ref="model_purchase_request"/>
         <field name="binding_type">action</field>
-        <!-- Contexto eliminado: Odoo inyecta active_id automáticamente -->
     </record>
 
     <!-- =========================== VISTA DE ÁRBOL =========================== -->
@@ -23,8 +21,7 @@
                 decoration-muted="state in ('cancel')"
                 decoration-info="state in ('draft','in_progress')"
                 decoration-success="state in ('done')"
-                name="Solicitudes de Insumos"
-            >
+                name="Solicitudes de Insumos">
                 <field name="name" string="Referencia"/>
                 <field name="create_date" string="Fecha de creación"/>
                 <field name="purchaser" widget="many2one_avatar_user"/>
@@ -85,6 +82,12 @@
                             class="oe_highlight"
                             invisible="state in ('done','cancel')"
                             help="Crear una nueva RFQ o agregar líneas a una existente"/>
+                    <button name="action_open_send_email_wizard"
+                            string="Cotizar productos"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state not in ('draft', 'in_progress')"
+                            help="Enviar cotización de productos seleccionados al proveedor"/>
                     <button name="action_close" string="Cerrar lista"
                             type="object"
                             class="oe_highlight"
@@ -109,13 +112,6 @@
                 <sheet>
                     <!-- Smart buttons -->
                     <div class="oe_button_box" name="button_box">
-<!--                        <button name="action_view_purchase_request_line" type="object"-->
-<!--                                class="oe_stat_button"-->
-<!--                                icon="fa-list"-->
-<!--                                invisible="line_count == 0"-->
-<!--                                string="Líneas">-->
-<!--                            <field name="line_count" widget="statinfo" string="Líneas"/>-->
-<!--                        </button>-->
                         <button name="action_view_purchase_order" type="object"
                                 class="oe_stat_button"
                                 icon="fa-shopping-cart"
@@ -131,12 +127,6 @@
                                 string="Recepciones">
                             <field name="move_count" widget="statinfo" string="Pickings"/>
                         </button>
-                        <button name="action_open_send_email_wizard"
-                                string="Enviar cotización por correo"
-                                type="object"
-                                class="oe_highlight"
-                                invisible="state not in ['draft', 'in_progress']"
-                                help="Enviar cotización de productos seleccionados al proveedor"/>
                     </div>
 
                     <!-- Encabezado -->
@@ -190,8 +180,7 @@
                                       decoration-muted="line_state in ('cancel')"
                                       decoration-info="line_state in ('pending','in_progress')"
                                       decoration-warning="line_state == 'to_receive'"
-                                      decoration-success="line_state in ('partially_purchased','purchased')"
-                                >
+                                      decoration-success="line_state in ('partially_purchased','purchased')">
                                     <field name="priority" widget="badge"
                                            decoration-warning="priority == 'urgent'"/>
                                     <field name="line_state" widget="badge"

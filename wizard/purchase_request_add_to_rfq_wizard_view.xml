@@ -10,8 +10,7 @@
                     <field name="supplier_id"
                            required="1"
                            options="{'no_create': True}"
-                           placeholder="Seleccione un proveedor"
-                           domain="[('supplier_rank', '>', 0)]"/>
+                           placeholder="Seleccione un proveedor"/>
                     <field name="purchase_order_id"
                            options="{'no_create': True}"
                            placeholder="Seleccione una cotización existente (opcional)"
@@ -20,7 +19,7 @@
 
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">
-                        <field name="wizard_id" invisible="1" readonly="1"/>
+                        <field name="wizard_id" column_invisible="1"/>
                         <field name="selected" widget="boolean_toggle"/>
                         <field name="request_line_id" column_invisible="1"/>
                         <field name="product_id" readonly="1" options="{'no_create': True}"/>
