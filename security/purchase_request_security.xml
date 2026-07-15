@@ -4,7 +4,7 @@
     <!-- =========================== CATEGORÍA DE GRUPOS =========================== -->
     <record id="module_category_purchase_request" model="ir.module.category">
         <field name="name">Solicitudes de Insumos</field>
-        <field name="parent_id" ref="base.module_category_purchase_management"/>
+<!--        <field name="parent_id" ref="base.module_category_purchase"/>-->
         <field name="sequence">15</field>
     </record>
 
