@@ -29,7 +29,7 @@
                         <field name="project_id" optional="hide"/>
                         <field name="task_id" optional="hide"/>
                         <field name="priority" optional="hide" widget="badge"/>
-                        <field name="supplier_id" optional="hide"/>
+<!--                        <field name="supplier_id" optional="hide"/>-->
                         <!-- Campos invisibles para mantener datos -->
                         <field name="requisition_line_id" column_invisible="1"/>
                     </tree>

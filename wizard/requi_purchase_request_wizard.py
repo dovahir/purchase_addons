@@ -12,7 +12,7 @@ class RequiPurchaseRequestWizard(models.TransientModel):
         comodel_name='purchase.request',
         string='Solicitud de insumos',
         domain="[('state', '=', 'draft')]",
-        required=True,
+        # required=True,
         help='Seleccione una solicitud en estado Activa',
     )
     requisition_id = fields.Many2one(
@@ -84,7 +84,7 @@ class RequiPurchaseRequestWizard(models.TransientModel):
                 'task_id': wizard_line.task_id.id if wizard_line.task_id else False,
                 'priority': wizard_line.priority or 'normal',
                 'analytic_distribution': wizard_line.analytic_distribution,
-                'supplier_id': wizard_line.supplier_id.id if wizard_line.supplier_id else False,
+                # 'supplier_id': wizard_line.supplier_id.id if wizard_line.supplier_id else False,
                 'line_state': 'pending',
                 'is_replenishment': False,
             }
@@ -164,7 +164,7 @@ class RequiPurchaseRequestWizard(models.TransientModel):
                             'project_id': line.project_id.id if line.project_id else False,
                             'task_id': line.task_id.id if line.task_id else False,
                             'priority': line.priority or 'normal',
-                            'supplier_id': line.partner_id.id if line.partner_id else False,
+                            # 'supplier_id': line.partner_id.id if line.partner_id else False,
                         }))
                     defaults['line_ids'] = line_vals
         return defaults
@@ -239,9 +239,9 @@ class RequiPurchaseRequestWizardLine(models.TransientModel):
         related='requisition_line_id.priority',
         readonly=True,
     )
-    supplier_id = fields.Many2one(
-        comodel_name='res.partner',
-        string='Proveedor',
-        related='requisition_line_id.partner_id',
-        readonly=True,
-    )
+    # supplier_id = fields.Many2one(
+    #     comodel_name='res.partner',
+    #     string='Proveedor',
+    #     related='requisition_line_id.partner_id',
+    #     readonly=True,
+    # )

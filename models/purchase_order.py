@@ -160,3 +160,16 @@ class PurchaseOrderLine(models.Model):
                     req_line.purchase_lines = [fields.Command.unlink(line.id)]
                     req_line._update_state_from_purchase_lines()
         return super().unlink()
+
+    def _prepare_stock_moves(self, picking):
+        self.ensure_one()
+        val = super()._prepare_stock_moves(picking)
+        all_list = []
+        for v in val:
+            all_ids = self.env['purchase.request.allocation'].search(
+                [('purchase_line_id', '=', v['purchase_line_id'])]
+            )
+            for all_id in all_ids:
+                all_list.append((4, all_id.id))
+            v['purchase_request_allocation_ids'] = all_list
+        return val

@@ -2,7 +2,7 @@
 
 {
     'name': 'Complementos para Compras',
-    'version': '17.0.1.0.0',
+    'version': '17.0.1.0',
     'category': 'Purchases',
     'summary': 'Serie de modificaciones y Funcionalidades para Compras',
     'description': """

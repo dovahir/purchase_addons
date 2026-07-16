@@ -95,7 +95,18 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
 
             # Vincular la línea de solicitud con la línea de PO usando fields.Command.link
             po_line.write({'purchase_request_lines': [fields.Command.link(request_line.id)]})
-            # Acumular líneas para actualizar estado masivamente
+
+            # --- CREAR ASIGNACIÓN ---
+            allocation_vals = {
+                'purchase_request_line_id': request_line.id,
+                'purchase_line_id': po_line.id,
+                'requested_product_uom_qty': wizard_line.product_qty,
+                'product_uom_id': request_line.product_uom_id.id,
+                'allocated_product_qty': 0.0,  # inicialmente cero, se actualizará con recepciones
+            }
+            self.env['purchase.request.allocation'].create(allocation_vals)
+            # ------------------------
+
             lines_to_in_progress |= request_line
 
         # Actualizar estado de todas las líneas acumuladas en una sola operación

@@ -20,7 +20,7 @@ class PurchaseRequisitionExt(models.Model):
                     'project_id': line.project_id.id if line.project_id else False,
                     'task_id': line.task_id.id if line.task_id else False,
                     'priority': line.priority or 'normal',
-                    'supplier_id': line.partner_id.id if line.partner_id else False,
+                    # 'supplier_id': line.partner_id.id if line.partner_id else False,
                 }) for line in self.requisition_order_ids
             ]
         })
