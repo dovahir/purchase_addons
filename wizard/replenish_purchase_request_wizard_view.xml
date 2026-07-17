@@ -6,7 +6,6 @@
         <field name="model">replenish.purchase.request.wizard</field>
         <field name="arch" type="xml">
             <form string="Agregar productos de reabastecimiento a solicitud de insumos">
-                <!-- sheet eliminado -->
                 <group>
                     <field name="purchase_request_id"
                            options="{'no_create': True}"
@@ -16,7 +15,6 @@
                 </group>
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">
-                        <!-- open_form="false" eliminado -->
                         <field name="product_id" readonly="1" options="{'no_create': True}"/>
                         <field name="product_qty" string="Cantidad" decoration-bf="1"/>
                         <field name="uom_id" readonly="1"/>

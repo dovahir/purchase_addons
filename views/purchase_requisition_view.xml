@@ -10,7 +10,7 @@
             <!-- Buscar el último botón del header e insertar después -->
             <xpath expr="//header/button[last()]" position="after">
                 <button name="action_open_requi_purchase_request_wizard"
-                        string="Agregar a lista de compras"
+                        string="Solicitar compra"
                         type="object"
                         class="oe_highlight"
                         invisible="state not in ('approved', 'purchase_order_created')"

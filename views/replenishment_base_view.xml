@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-
 <odoo>
     <!-- =========================== ACCIÓN PARA EL WIZARD =========================== -->
     <record id="action_replenish_purchase_request_wizard" model="ir.actions.act_window">
@@ -28,16 +27,15 @@
                         type="object"
                         icon="fa-cart-plus"
                         title="Agregar este producto a una solicitud de insumos"
-                        string="Agregar a solicitud"
+                        string="Solicitar compra"
                 />
             </xpath>
 
-            <!-- Botón "Agregar seleccionados a solicitud" en el header del tree -->
             <xpath expr="//tree" position="inside">
                 <header>
                     <button name="action_add_to_purchase_request"
                             type="object"
-                            string="Agregar seleccionados a solicitud"
+                            string="Solicitar compra"
                             class="btn-primary"
                             context="{'active_model': 'stock.warehouse.orderpoint'}"
                     />
@@ -52,13 +50,12 @@
         <field name="model">stock.warehouse.orderpoint</field>
         <field name="inherit_id" ref="stock.view_warehouse_orderpoint_form"/>
         <field name="arch" type="xml">
-            <!-- Insertar botón dentro del button_box existente -->
             <xpath expr="//field[@name='product_id']" position="after">
                 <button name="%(purchase_addons.action_replenish_purchase_request_wizard)d"
                         type="action"
                         class="oe_stat_button"
                         icon="fa-cart-plus"
-                        string="Agregar a solicitud"
+                        string="Solicitar compra"
                         context="{'active_model': 'stock.warehouse.orderpoint'}"
                         help="Agregar este producto a una solicitud de insumos activa"/>
             </xpath>

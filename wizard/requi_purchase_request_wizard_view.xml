@@ -6,7 +6,6 @@
         <field name="model">requi.purchase.request.wizard</field>
         <field name="arch" type="xml">
             <form string="Agregar líneas de requisición a solicitud de insumos">
-                <!-- sheet eliminado: no es necesario en wizards (target="new") -->
                 <group>
                     <field name="requisition_id" invisible="1"/>
                     <field name="company_id" invisible="1"/>
@@ -18,7 +17,6 @@
                 </group>
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">
-                        <!-- open_form="false" eliminado (no es estándar en Odoo 17) -->
                         <field name="selected" widget="boolean_toggle"/>
                         <field name="product_id" readonly="1" options="{'no_create': True}"/>
                         <field name="requisition_qty" readonly="1" string="Req."/>
@@ -29,8 +27,6 @@
                         <field name="project_id" optional="hide"/>
                         <field name="task_id" optional="hide"/>
                         <field name="priority" optional="hide" widget="badge"/>
-<!--                        <field name="supplier_id" optional="hide"/>-->
-                        <!-- Campos invisibles para mantener datos -->
                         <field name="requisition_line_id" column_invisible="1"/>
                     </tree>
                 </field>
