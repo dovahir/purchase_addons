@@ -19,20 +19,6 @@
                             </tree>
                         </field>
                     </page>
-
-<!--                    <page name="requisitions" string="Órdenes abiertas">-->
-<!--                        <field name="requisition_ids">-->
-<!--                            <tree string="Órdenes generales" default_order="create_date desc">-->
-<!--                                <field name="name" string="Nº Orden"/>-->
-<!--&lt;!&ndash;                                <field name="state" string="Estado" widget="badge"/>&ndash;&gt;-->
-<!--                                <field name="type_id" string="Tipo"/>-->
-<!--                                <field name="date_end" string="Fecha límite"/>-->
-<!--&lt;!&ndash;                                <field name="amount_total" string="Total" sum="Total"/>&ndash;&gt;-->
-<!--                                <field name="user_id" string="Representante"/>-->
-<!--                            </tree>-->
-<!--                        </field>-->
-<!--                    </page>-->
-
                 </xpath>
             </field>
         </record>

@@ -74,19 +74,19 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             # Crear nueva línea en la solicitud
             new_line_vals = {
                 'request_id': request.id,
+                'requisition_product_id': req_line.id,
                 'product_id': wizard_line.product_id.id,
                 'product_uom_id': wizard_line.uom_id.id,
                 'product_qty': wizard_line.product_qty,
-                'date_required': fields.Date.today(),
+                'date_required': self.requisition_id.requisition_deadline or fields.Date.today(),
                 'name': wizard_line.product_id.display_name,
-                'requisition_product_id': req_line.id,
                 'project_id': wizard_line.project_id.id if wizard_line.project_id else False,
                 'task_id': wizard_line.task_id.id if wizard_line.task_id else False,
                 'priority': wizard_line.priority or 'normal',
                 'analytic_distribution': wizard_line.analytic_distribution,
-                # 'supplier_id': wizard_line.supplier_id.id if wizard_line.supplier_id else False,
-                'line_state': 'pending',
+                'note': wizard_line.note if wizard_line.note else False,
                 'is_replenishment': False,
+                'line_state': 'pending',
             }
             new_line = self.env['purchase.request.line'].create(new_line_vals)
             added_lines.append(new_line)
@@ -164,7 +164,6 @@ class RequiPurchaseRequestWizard(models.TransientModel):
                             'project_id': line.project_id.id if line.project_id else False,
                             'task_id': line.task_id.id if line.task_id else False,
                             'priority': line.priority or 'normal',
-                            # 'supplier_id': line.partner_id.id if line.partner_id else False,
                         }))
                     defaults['line_ids'] = line_vals
         return defaults
@@ -239,9 +238,3 @@ class RequiPurchaseRequestWizardLine(models.TransientModel):
         related='requisition_line_id.priority',
         readonly=True,
     )
-    # supplier_id = fields.Many2one(
-    #     comodel_name='res.partner',
-    #     string='Proveedor',
-    #     related='requisition_line_id.partner_id',
-    #     readonly=True,
-    # )

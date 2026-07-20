@@ -100,6 +100,13 @@ class PurchaseRequestLine(models.Model):
         tracking=True,
         index=True,
     )
+    requisition_id = fields.Many2one(
+        related='requisition_product_id.requisition_product_id',
+        string='Requisición origen',
+        store=True,
+        readonly=True,
+        index=True,
+    )
     requisition_product_id = fields.Many2one(
         comodel_name='requisition.order',
         string='Línea de requisición origen',

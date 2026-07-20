@@ -175,30 +175,28 @@
                         <page string="Productos" name="products">
                             <field name="line_ids" nolabel="1" mode="tree"
                                    context="{'default_priority': 'normal'}">
-                                <tree editable="bottom"
-                                      decoration-muted="line_state in ('cancel')"
-                                      decoration-info="line_state in ('pending','in_progress')"
-                                      decoration-warning="line_state == 'to_receive'"
-                                      decoration-success="line_state in ('partially_purchased','purchased')">
-                                    <field name="priority" widget="badge"
-                                           decoration-warning="priority == 'urgent'"/>
-                                    <field name="line_state" widget="badge"
+                                <tree editable="bottom">
+                                    <field name="line_state" widget="badge" string="Estado de línea"
                                            decoration-muted="line_state == 'cancel'"
                                            decoration-info="line_state in ('pending','in_progress')"
                                            decoration-warning="line_state == 'to_receive'"
                                            decoration-success="line_state in ('partially_purchased','purchased')"/>
-                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="priority" widget="badge"
+                                           decoration-warning="priority == 'urgent'"/>
+                                    <field name="product_id" options="{'no_create': True}" widget="many2one"/>
                                     <field name="note"/>
-                                    <field name="product_qty" sum="Total"/>
+                                    <field name="product_qty"/>
                                     <field name="pending_qty_to_buy" optional="show"/>
                                     <field name="qty_in_progress" optional="hide"/>
                                     <field name="qty_done" optional="show"/>
                                     <field name="product_uom_category_id" column_invisible="1"/>
                                     <field name="product_uom_id" groups="uom.group_uom" options="{'no_create': True}"/>
+                                    <field name="requisition_id" optional="show" widget="many2one"/>
                                     <field name="project_id" optional="show"/>
                                     <field name="task_id" optional="show"/>
+                                    <field name="analytic_distribution" widget="analytic_distribution" readonly="1" string="Distr. Analítica" optional="hide"/>
                                     <field name="date_required" optional="show"/>
-                                    <field name="is_replenishment" column_invisible="1"/>
+                                    <field name="is_replenishment" optional="hide"/>
 <!--                                    <field name="purchase_state" optional="show"-->
 <!--                                           widget="badge"-->
 <!--                                           decoration-success="purchase_state == 'purchase' or purchase_state == 'done'"-->

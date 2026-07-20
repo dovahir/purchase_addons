@@ -6,12 +6,7 @@
         <field name="name">purchase.request.line.tree</field>
         <field name="model">purchase.request.line</field>
         <field name="arch" type="xml">
-            <tree name="Líneas de Solicitud"
-                  create="false"
-                  decoration-muted="line_state in ('cancel')"
-                  decoration-info="line_state in ('pending','in_progress')"
-                  decoration-warning="line_state == 'to_receive'"
-                  decoration-success="line_state in ('partially_purchased','purchased')">
+            <tree name="Líneas de Solicitud" create="false">
                 <header>
                     <button name="action_open_send_email_wizard"
                             string="Enviar correo"
@@ -19,7 +14,7 @@
                             icon="fa-envelope"
                             class="btn-primary"/>
                 </header>
-                <field name="request_id" string="Solicitud"/>
+                <field name="request_id" string="Solicitud" widget="many2one"/>
                 <field name="priority" widget="badge" optional="show"
                        decoration-warning="priority == 'urgent'"/>
                 <field name="line_state" widget="badge"
@@ -27,10 +22,11 @@
                        decoration-info="line_state in ('pending','in_progress')"
                        decoration-warning="line_state == 'to_receive'"
                        decoration-success="line_state in ('partially_purchased','purchased')"/>
-                <field name="product_id" string="Producto" options="{'no_create': True}"/>
-                <field name="product_qty" string="Cant. Solicitada" sum="Total"/>
+                <field name="product_id" string="Producto" options="{'no_create': True}" widget="many2one"/>
+                <field name="product_qty" string="Cant. Solicitada"/>
                 <field name="product_uom_id" string="UoM" groups="uom.group_uom" options="{'no_create': True}"/>
 <!--                <field name="supplier_id" string="Proveedor preferido" optional="hide"/>-->
+                <field name="requisition_id" string="Requisición" optional="show" widget="many2one"/>
                 <field name="project_id" string="Proyecto" optional="show"/>
                 <field name="task_id" string="Tarea" optional="show"/>
                 <field name="date_required" string="Fecha requerida"/>
@@ -149,9 +145,9 @@
 <!--                            <field name="supplier_id" readonly="1"/>-->
                             <field name="priority" widget="badge" readonly="line_state != 'draft'"/>
                             <field name="is_replenishment" widget="boolean" readonly="1"/>
-                            <field name="requisition_product_id" readonly="1"
-                                   invisible="not requisition_product_id"
-                                   help="Línea de requisición origen"/>
+                            <field name="requisition_id" readonly="1"
+                                   invisible="not requisition_id"
+                                   help="Requisición origen"/>
                             <field name="note" readonly="line_state != 'draft'"/>
                         </group>
                         <group name="info">
@@ -356,8 +352,8 @@
                 <field name="product_id" string="Producto"/>
                 <field name="product_qty" string="Cantidad"/>
                 <field name="product_uom" groups="uom.group_uom"/>
-                <field name="price_unit" widget="monetary"/>
-                <field name="price_subtotal" widget="monetary" sum="Total"/>
+<!--                <field name="price_unit" widget="monetary"/>-->
+<!--                <field name="price_subtotal" widget="monetary" sum="Total"/>-->
                 <field name="date_planned" widget="date"/>
                 <field name="state" widget="badge"/>
             </tree>

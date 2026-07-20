@@ -232,12 +232,13 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             'product_id': product.id,
             'product_uom': uom.id,
             'product_qty': qty,
-            'date_planned': request_line.date_required or fields.Date.today(),
+            # 'date_planned': request_line.date_required or fields.Date.today(),
             'name': request_line.name or product.display_name,
-            'analytic_distribution': request_line.analytic_distribution,
             'project_id': request_line.project_id.id if request_line.project_id else False,
             'task_id': request_line.task_id.id if request_line.task_id else False,
+            'analytic_distribution': request_line.analytic_distribution,
             'priority': request_line.priority,
+            'note': request_line.note if request_line else False,
             'req_ids': [fields.Command.link(
                 request_line.requisition_product_id.requisition_product_id.id)] if request_line.requisition_product_id else False,
         }
@@ -245,29 +246,8 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
 
     @api.model
     def default_get(self, fields_list):
-        """Precarga las líneas de la solicitud activa."""
+        """Precarga las líneas de la solicitud activa. En test"""
         defaults = super().default_get(fields_list)
-
-        # active_id = self.env.context.get('active_id')
-        # if active_id:
-        #     request = self.env['purchase.request'].browse(active_id)
-        #     if request.exists() and 'line_ids' in fields_list:
-        #         line_vals = []
-        #         for line in request.line_ids.filtered(
-        #             lambda l: l.line_state in ('pending', 'in_progress')
-        #         ):
-        #             line_vals.append(fields.Command.create({
-        #                 'request_line_id': line.id,
-        #                 'selected': False,
-        #                 'product_id': line.product_id.id,
-        #                 'product_qty': line.pending_qty_to_buy or line.product_qty,
-        #                 'uom_id': line.product_uom_id.id,
-        #             }))
-        #         defaults['line_ids'] = line_vals
-        #         # Pre-cargar el supplier_id si todas las líneas tienen el mismo proveedor
-        #         suppliers = request.line_ids.mapped('supplier_id')
-        #         if len(suppliers) == 1:
-        #             defaults['supplier_id'] = suppliers.id
 
         return defaults
 

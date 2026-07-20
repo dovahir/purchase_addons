@@ -41,9 +41,9 @@
                 <field name="stock_move_id" string="Movimiento de stock"/>
                 <field name="purchase_line_id" string="Línea de compra"/>
                 <field name="product_id" string="Producto"/>
-                <field name="requested_product_uom_qty" string="Solicitado" sum="Total"/>
-                <field name="allocated_product_qty" string="Asignado" sum="Total"/>
-                <field name="open_product_qty" string="Pendiente" sum="Total"/>
+                <field name="requested_product_uom_qty" string="Solicitado"/>
+                <field name="allocated_product_qty" string="Asignado"/>
+                <field name="open_product_qty" string="Pendiente"/>
                 <field name="product_uom_id" string="UoM"/>
                 <field name="purchase_state" string="Estado compra"
                        widget="badge"
