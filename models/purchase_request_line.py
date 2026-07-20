@@ -52,7 +52,7 @@ class PurchaseRequestLine(models.Model):
         related='product_id.uom_id.category_id',
     )
     product_qty = fields.Float(
-        string='Cantidad',
+        string='Cant. Solicitada',
         tracking=True,
         digits='Product Unit of Measure',
     )
@@ -156,31 +156,31 @@ class PurchaseRequestLine(models.Model):
 
     # ===== Campos de seguimiento de cantidades =====
     qty_in_progress = fields.Float(
-        string='Cantidad en proceso',
+        string='Cant. en proceso',
         digits='Product Unit of Measure',
         compute='_compute_qty',
         store=True,
     )
     qty_done = fields.Float(
-        string='Cantidad completada',
+        string='Cant. completada',
         digits='Product Unit of Measure',
         compute='_compute_qty',
         store=True,
     )
     qty_cancelled = fields.Float(
-        string='Cantidad cancelada',
+        string='Cant. cancelada',
         digits='Product Unit of Measure',
         compute='_compute_qty_cancelled',
         store=True,
     )
     pending_qty_to_receive = fields.Float(
-        string='Cantidad pendiente por recibir',
+        string='Cant. por recibir',
         compute='_compute_pending_qty',
         digits='Product Unit of Measure',
         store=True,
     )
     pending_qty_to_buy = fields.Float(
-        string='Cantidad pendiente por comprar',
+        string='Cant. pendiente',
         compute='_compute_pending_qty',
         digits='Product Unit of Measure',
         store=True,

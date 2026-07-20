@@ -445,7 +445,7 @@ class PurchaseRequest(models.Model):
                     'product_qty': line.pending_qty_to_buy or line.product_qty,
                     'uom_id': line.product_uom_id.id,
                 }) for line in self.line_ids.filtered(
-                    lambda l: l.line_state in ('pending', 'in_progress')
+                    lambda l: l.line_state not in ('purchased', 'cancel')
                 )
             ]
         })

@@ -189,7 +189,7 @@
                                            decoration-warning="line_state == 'to_receive'"
                                            decoration-success="line_state in ('partially_purchased','purchased')"/>
                                     <field name="product_id" options="{'no_create': True}"/>
-                                    <field name="product_qty" sum="Total" string="Cant. Solicitada"/>
+                                    <field name="product_qty" sum="Total"/>
                                     <field name="product_uom_category_id" column_invisible="1"/>
                                     <field name="product_uom_id" groups="uom.group_uom" options="{'no_create': True}"/>
                                     <field name="project_id" optional="show"/>

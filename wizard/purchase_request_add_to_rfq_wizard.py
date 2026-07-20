@@ -77,14 +77,26 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
                 # Para líneas de requisición: validar por producto y línea de requisición origen
                 existing = order.order_line.filtered(
                     lambda ol: ol.product_id == request_line.product_id
-                    and request_line.requisition_product_id.id in ol.req_ids.ids
+                               and request_line.id in ol.purchase_request_lines.ids
                 )
 
             if existing:
-                # Si ya existe, sumar la cantidad a la línea existente
                 existing_line = existing[0]
                 new_qty = existing_line.product_qty + wizard_line.product_qty
-                existing_line.write({'product_qty': new_qty})
+                existing_line.write({
+                    'product_qty': new_qty,
+                    'purchase_request_lines': [fields.Command.link(request_line.id)]
+                    # Agregar la nueva línea de solicitud
+                })
+                # Crear una nueva asignación para la nueva cantidad
+                allocation_vals = {
+                    'purchase_request_line_id': request_line.id,
+                    'purchase_line_id': existing_line.id,
+                    'requested_product_uom_qty': wizard_line.product_qty,
+                    'product_uom_id': request_line.product_uom_id.id,
+                    'allocated_product_qty': 0.0,
+                }
+                self.env['purchase.request.allocation'].create(allocation_vals)
                 added_lines.append(existing_line)
                 continue
 

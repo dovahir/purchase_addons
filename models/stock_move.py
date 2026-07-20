@@ -38,85 +38,68 @@ class StockMove(models.Model):
         return res
 
     def _action_cancel(self):
-        """Al cancelar un movimiento, actualizar las líneas de solicitud si corresponde."""
         res = super()._action_cancel()
         for move in self:
-            if move.purchase_request_line_id:
-                move.purchase_request_line_id._update_state_from_purchase_lines()
+            for allocation in move.purchase_request_allocation_ids:
+                allocation.purchase_request_line_id._update_state_from_purchase_lines()
         return res
 
     def _action_done(self, cancel_backorder=False):
-        """
-        Sobrescritura del método _action_done en Odoo v17.
-        Al validar el movimiento (recepción), actualizar las asignaciones y las líneas de solicitud.
-        """
         res = super()._action_done(cancel_backorder=cancel_backorder)
 
         for move in self:
-            if not move.purchase_request_line_id:
+            allocations = move.purchase_request_allocation_ids
+            if not allocations:
                 continue
 
-            request_line = move.purchase_request_line_id
-
-            # Obtener todas las líneas de movimiento (stock.move.line) asociadas a este move
-            move_lines = move.move_line_ids.filtered(lambda ml: ml.state == 'done' and ml.quantity > 0)
-
-            if not move_lines:
+            # Obtener líneas de movimiento ya hechas (cantidad recibida)
+            done_move_lines = move.move_line_ids.filtered(lambda ml: ml.state == 'done' and ml.quantity > 0)
+            if not done_move_lines:
                 continue
 
-            # Para cada línea de movimiento, buscar la asignación correspondiente y actualizar allocated_product_qty
-            for ml in move_lines:
-                # Buscar la asignación que coincide con esta línea de movimiento
-                # Normalmente hay una asignación por cada movimiento, pero puede haber varias si se dividió
-                allocations = request_line.purchase_request_allocation_ids.filtered(
-                    lambda a: a.stock_move_id.id == move.id
-                )
+            total_received = sum(done_move_lines.mapped('quantity'))
 
-                # Si no hay asignaciones, no podemos hacer nada
-                if not allocations:
+            # Agrupar asignaciones por línea de solicitud
+            for request_line in allocations.mapped('purchase_request_line_id'):
+                line_allocations = allocations.filtered(lambda a: a.purchase_request_line_id == request_line)
+                total_requested = sum(line_allocations.mapped('requested_product_uom_qty'))
+
+                if total_requested <= 0:
                     continue
 
-                # La cantidad recibida en esta línea de movimiento (en la UoM del producto)
-                qty_received = ml.quantity
-
-                # Para simplificar, asignamos la cantidad a la primera asignación (o distribuir según corresponda)
-                # Pero lo correcto es que cada asignación tenga su propia cantidad
-                # Como normalmente hay una asignación por movimiento, tomamos la primera
-                allocation = allocations[0]
-
-                # Incrementar allocated_product_qty con la cantidad recibida
-                # Asegurarse de que la cantidad no supere lo solicitado
-                new_allocated = min(
-                    allocation.allocated_product_qty + qty_received,
-                    allocation.requested_product_uom_qty
-                )
-                if new_allocated != allocation.allocated_product_qty:
-                    allocation.write({'allocated_product_qty': new_allocated})
-                    # Notificar
-                    allocation._notify_allocation(qty_received)
-
-            # Después de actualizar todas las asignaciones, recalcular el estado de la línea de solicitud
-            request_line._update_state_from_purchase_lines()
-
-            # Si la línea de solicitud está completamente recibida, marcar como 'purchased'
-            if request_line.qty_done >= request_line.product_qty:
-                request_line.line_state = 'purchased'
-                request_line.request_id._check_all_lines_purchased()
-                request_line.request_id.message_post(
-                    body=_('Línea %s completada (recepción total).') % (
-                        request_line.name or request_line.product_id.display_name
+                # Distribuir la cantidad recibida proporcionalmente entre las asignaciones
+                for allocation in line_allocations:
+                    qty_to_add = total_received * (allocation.requested_product_uom_qty / total_requested)
+                    new_allocated = min(
+                        allocation.allocated_product_qty + qty_to_add,
+                        allocation.requested_product_uom_qty
                     )
-                )
-            elif request_line.qty_done > 0:
-                request_line.line_state = 'partially_purchased'
-                request_line.request_id.message_post(
-                    body=_('Línea %s parcialmente recibida (%.2f de %.2f %s).') % (
-                        request_line.name or request_line.product_id.display_name,
-                        request_line.qty_done,
-                        request_line.product_qty,
-                        request_line.product_uom_id.name,
+                    if new_allocated != allocation.allocated_product_qty:
+                        allocation.write({'allocated_product_qty': new_allocated})
+                        allocation._notify_allocation(qty_to_add)
+
+                # Actualizar el estado de la línea de solicitud
+                request_line._update_state_from_purchase_lines()
+
+                # Si se completó, marcar como 'purchased'
+                if request_line.qty_done >= request_line.product_qty:
+                    request_line.write({'line_state': 'purchased'})
+                    request_line.request_id._check_all_lines_purchased()
+                    request_line.request_id.message_post(
+                        body=_('Línea %s completada (recepción total).') % (
+                                request_line.name or request_line.product_id.display_name
+                        )
                     )
-                )
+                elif request_line.qty_done > 0:
+                    request_line.write({'line_state': 'partially_purchased'})
+                    request_line.request_id.message_post(
+                        body=_('Línea %s parcialmente recibida (%.2f de %.2f %s).') % (
+                            request_line.name or request_line.product_id.display_name,
+                            request_line.qty_done,
+                            request_line.product_qty,
+                            request_line.product_uom_id.name,
+                        )
+                    )
 
         return res
 
