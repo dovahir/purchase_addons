@@ -165,10 +165,9 @@
                             <field name="origin" readonly="state != 'draft'"/>
                         </group>
                         <group>
-                            <field name="create_date" readonly="1"/>
+                            <field name="create_date" string="Fecha de creación" readonly="1"/>
                             <field name="picking_type_id" readonly="state != 'draft'" required="1"/>
                         </group>
-                        <field name="description" readonly="state != 'draft'"/>
                     </group>
 
                     <!-- Notebook con líneas -->
@@ -189,17 +188,22 @@
                                            decoration-warning="line_state == 'to_receive'"
                                            decoration-success="line_state in ('partially_purchased','purchased')"/>
                                     <field name="product_id" options="{'no_create': True}"/>
+                                    <field name="note"/>
                                     <field name="product_qty" sum="Total"/>
+                                    <field name="pending_qty_to_buy" optional="show"/>
+                                    <field name="qty_in_progress" optional="hide"/>
+                                    <field name="qty_done" optional="show"/>
                                     <field name="product_uom_category_id" column_invisible="1"/>
                                     <field name="product_uom_id" groups="uom.group_uom" options="{'no_create': True}"/>
                                     <field name="project_id" optional="show"/>
                                     <field name="task_id" optional="show"/>
                                     <field name="date_required" optional="show"/>
                                     <field name="is_replenishment" column_invisible="1"/>
-                                    <field name="pending_qty_to_buy" optional="hide"/>
-                                    <field name="qty_in_progress" optional="hide"/>
-                                    <field name="qty_done" optional="hide"/>
-                                    <field name="purchase_state" optional="show"/>
+<!--                                    <field name="purchase_state" optional="show"-->
+<!--                                           widget="badge"-->
+<!--                                           decoration-success="purchase_state == 'purchase' or purchase_state == 'done'"-->
+<!--                                           decoration-warning="purchase_state == 'to approve'"-->
+<!--                                           decoration-info="purchase_state == 'draft' or purchase_state == 'sent'"/>-->
 <!--                                    <button name="action_show_details" type="object"-->
 <!--                                            icon="fa-external-link" title="Ver detalle"/>-->
                                 </tree>
@@ -207,6 +211,7 @@
                         </page>
                     </notebook>
                     <group>
+                        <field name="description" readonly="state != 'draft'"/>
                         <field name="group_id" readonly="state != 'draft'" options="{'no_create': True}"/>
                         <field name="company_id" groups="base.group_multi_company"
                                widget="selection" readonly="1"/>

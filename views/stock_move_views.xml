@@ -45,7 +45,11 @@
                 <field name="allocated_product_qty" string="Asignado" sum="Total"/>
                 <field name="open_product_qty" string="Pendiente" sum="Total"/>
                 <field name="product_uom_id" string="UoM"/>
-                <field name="purchase_state" string="Estado compra" widget="badge"/>
+                <field name="purchase_state" string="Estado compra"
+                       widget="badge"
+                       decoration-success="purchase_state == 'purchase' or purchase_state == 'done'"
+                       decoration-warning="purchase_state == 'to approve'"
+                       decoration-info="purchase_state == 'draft' or purchase_state == 'sent'"/>
             </tree>
         </field>
     </record>

@@ -125,52 +125,75 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         if lines_to_in_progress:
             lines_to_in_progress.write({'line_state': 'in_progress'})
 
+        # # Mensaje en el chatter de la solicitud
+        # for req in selected_lines.mapped('request_line_id.request_id'):
+        #     req.message_post(
+        #         body=_('Se agregaron %d líneas a la cotización %s.')
+        #         % (len(selected_lines.filtered(lambda l: l.request_line_id.request_id == req)), order.name)
+        #     )
+        #
+        # # Mensaje en el chatter de la PO
+        # if added_lines:
+        #     order.message_post(
+        #         body=_('Se agregaron %d líneas desde solicitudes de insumos.')
+        #         % len(added_lines)
+        #     )
+        #
+        # # Construir mensaje de notificación
+        # message = _('Se agregaron %d líneas a la cotización %s.') % (
+        #     len(added_lines),
+        #     order.name
+        # )
+        #
+        # if skipped_lines:
+        #     skipped_names = ', '.join([
+        #         l.product_id.display_name or 'Producto sin nombre'
+        #         for l in skipped_lines
+        #         if l.product_id and l.product_id.display_name
+        #     ])
+        #     if skipped_names:
+        #         message += _('\n\nLíneas omitidas por ya existir en la cotización:\n%s') % skipped_names
+        #
+        # # Retornar notificación y abrir la PO
+        # return {
+        #     'type': 'ir.actions.client',
+        #     'tag': 'display_notification',
+        #     'params': {
+        #         'title': _('Proceso Completado'),
+        #         'message': message,
+        #         'type': 'warning' if skipped_lines else 'success',
+        #         'sticky': True if skipped_lines else False,
+        #         'next': {
+        #             'type': 'ir.actions.act_window',
+        #             'res_model': 'purchase.order',
+        #             'res_id': order.id,
+        #             'view_mode': 'form',
+        #             'target': 'current',
+        #         },
+        #     }
+        # }
+
         # Mensaje en el chatter de la solicitud
         for req in selected_lines.mapped('request_line_id.request_id'):
             req.message_post(
                 body=_('Se agregaron %d líneas a la cotización %s.')
-                % (len(selected_lines.filtered(lambda l: l.request_line_id.request_id == req)), order.name)
+                     % (len(selected_lines.filtered(lambda l: l.request_line_id.request_id == req)), order.name)
             )
 
         # Mensaje en el chatter de la PO
         if added_lines:
             order.message_post(
                 body=_('Se agregaron %d líneas desde solicitudes de insumos.')
-                % len(added_lines)
+                     % len(added_lines)
             )
 
-        # Construir mensaje de notificación
-        message = _('Se agregaron %d líneas a la cotización %s.') % (
-            len(added_lines),
-            order.name
-        )
-
-        if skipped_lines:
-            skipped_names = ', '.join([
-                l.product_id.display_name or 'Producto sin nombre'
-                for l in skipped_lines
-                if l.product_id and l.product_id.display_name
-            ])
-            if skipped_names:
-                message += _('\n\nLíneas omitidas por ya existir en la cotización:\n%s') % skipped_names
-
-        # Retornar notificación y abrir la PO
+        # Retornar la acción para abrir la orden de compra
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Proceso Completado'),
-                'message': message,
-                'type': 'warning' if skipped_lines else 'success',
-                'sticky': True if skipped_lines else False,
-                'next': {
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'purchase.order',
-                    'res_id': order.id,
-                    'view_mode': 'form',
-                    'target': 'current',
-                },
-            }
+            'type': 'ir.actions.act_window',
+            'res_model': 'purchase.order',
+            'res_id': order.id,
+            'view_mode': 'form',
+            'target': 'current',
         }
 
     def _create_purchase_order(self, supplier, selected_lines):

@@ -16,11 +16,11 @@ _LINE_STATES = [
 # Estados de purchase.order para el campo purchase_state (fijo)
 _PURCHASE_STATES = [
     ('draft', 'RFQ'),
-    ('sent', 'RFQ Sent'),
-    ('to approve', 'To Approve'),
-    ('purchase', 'Purchase Order'),
-    ('done', 'Locked'),
-    ('cancel', 'Cancelled'),
+    ('sent', 'RFQ Envíado'),
+    ('to approve', 'Por aprobar'),
+    ('purchase', 'Orden de compra'),
+    ('done', 'Bloqueado'),
+    ('cancel', 'Cancelado'),
 ]
 
 
@@ -44,7 +44,7 @@ class PurchaseRequestLine(models.Model):
     )
     product_uom_id = fields.Many2one(
         comodel_name='uom.uom',
-        string='Unidad de medida',
+        string='UoM',
         tracking=True,
         domain="[('category_id', '=', product_uom_category_id)]",
     )

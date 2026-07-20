@@ -65,7 +65,7 @@ class PurchaseRequest(models.Model):
         index=True,
     )
     description = fields.Text(
-        string='Notas',
+        string='Notas de la solicitud',
         tracking=True,
     )
     company_id = fields.Many2one(
@@ -81,7 +81,6 @@ class PurchaseRequest(models.Model):
         string='Líneas',
         readonly=False,
         copy=True,
-        tracking=True,
     )
     state = fields.Selection(
         selection=_STATES,

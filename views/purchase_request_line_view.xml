@@ -35,7 +35,11 @@
                 <field name="task_id" string="Tarea" optional="show"/>
                 <field name="date_required" string="Fecha requerida"/>
                 <field name="is_replenishment" string="Reabastecimiento" optional="show" widget="boolean"/>
-                <field name="purchase_state" string="Estado de compra" optional="show" widget="badge"/>
+                <field name="purchase_state" string="Estado de compra" optional="show"
+                       widget="badge"
+                       decoration-success="purchase_state == 'purchase' or purchase_state == 'done'"
+                       decoration-warning="purchase_state == 'to approve'"
+                       decoration-info="purchase_state == 'draft' or purchase_state == 'sent'"/>
                 <field name="pending_qty_to_buy" string="Pendiente comprar" optional="hide"/>
                 <field name="qty_in_progress" string="En proceso" optional="hide"/>
                 <field name="qty_done" string="Recibido" optional="hide"/>
@@ -138,10 +142,9 @@
                     <group name="main">
                         <group name="settings">
                             <field name="product_id" readonly="line_state != 'draft'"/>
+                            <field name="product_qty" readonly="line_state != 'draft'"/>
                             <field name="product_uom_category_id" invisible="1"/>
                             <field name="product_uom_id" groups="uom.group_uom" readonly="line_state != 'draft'"/>
-                            <field name="note" nolabel="1" readonly="line_state != 'draft'"/>
-                            <field name="product_qty" readonly="line_state != 'draft'"/>
                             <field name="date_required" readonly="line_state != 'draft'"/>
 <!--                            <field name="supplier_id" readonly="1"/>-->
                             <field name="priority" widget="badge" readonly="line_state != 'draft'"/>
@@ -179,7 +182,11 @@
                     <notebook>
                         <page name="purchase_lines" string="Órdenes de Compra">
                             <group>
-                                <field name="purchase_state" widget="badge"/>
+                                <field name="purchase_state"
+                                       widget="badge"
+                                       decoration-success="purchase_state == 'purchase' or purchase_state == 'done'"
+                                       decoration-warning="purchase_state == 'to approve'"
+                                       decoration-info="purchase_state == 'draft' or purchase_state == 'sent'"/>
                             </group>
                             <field name="purchase_lines" nolabel="1"
                                    domain="[('product_id', '=', product_id)]"
@@ -208,7 +215,7 @@
                                     <field name="allocated_product_qty" string="Asignado"/>
                                     <field name="open_product_qty" string="Pendiente"/>
                                     <field name="product_uom_id" string="UoM"/>
-                                    <field name="purchase_state" string="Estado compra" invisible="1"/>
+                                    <field name="purchase_state" string="Estado compra" column_invisible="1"/>
                                 </tree>
                             </field>
                         </page>
