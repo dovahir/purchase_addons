@@ -232,7 +232,6 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             'product_id': product.id,
             'product_uom': uom.id,
             'product_qty': qty,
-            # 'date_planned': request_line.date_required or fields.Date.today(),
             'name': request_line.name or product.display_name,
             'project_id': request_line.project_id.id if request_line.project_id else False,
             'task_id': request_line.task_id.id if request_line.task_id else False,
