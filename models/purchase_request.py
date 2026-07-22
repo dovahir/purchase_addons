@@ -225,6 +225,10 @@ class PurchaseRequest(models.Model):
                 body=_('Cotización enviada a %s por correo.') % partner.name
             )
 
+        for line in selected_lines:
+            if line.line_state == 'pending':
+                line.write({'line_state': 'email_sent'})
+
         # Limpiar campos temporales
         self.write({
             'email_partner_id': False,

@@ -19,7 +19,7 @@
                        decoration-warning="priority == 'urgent'"/>
                 <field name="line_state" widget="badge"
                        decoration-muted="line_state == 'cancel'"
-                       decoration-info="line_state in ('pending','in_progress')"
+                       decoration-info="line_state in ('pending','email_sent','in_progress')"
                        decoration-warning="line_state == 'to_receive'"
                        decoration-success="line_state in ('partially_purchased','purchased')"/>
                 <field name="product_id" string="Producto" options="{'no_create': True}" widget="many2one"/>
@@ -61,6 +61,7 @@
 
                 <separator/>
                 <filter name="state_pending" string="Pendientes" domain="[('line_state','=','pending')]"/>
+                <filter name="state_email_sent" string="Cotización enviada" domain="[('line_state','=','email_sent')]"/>
                 <filter name="state_in_progress" string="En cotización" domain="[('line_state','=','in_progress')]"/>
                 <filter name="state_to_receive" string="Por recepcionar" domain="[('line_state','=','to_receive')]"/>
                 <filter name="state_partial" string="Parcialmente comprado" domain="[('line_state','=','partially_purchased')]"/>
@@ -95,7 +96,7 @@
             <form string="Línea de Solicitud" create="false" duplicate="false">
                 <header>
                     <field name="line_state" widget="statusbar"
-                           statusbar_visible="pending,in_progress,to_receive,partially_purchased,purchased,cancel"
+                           statusbar_visible="pending,email_sent,in_progress,to_receive,partially_purchased,purchased,cancel"
                            readonly="1"/>
                 </header>
 

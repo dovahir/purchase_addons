@@ -6,7 +6,8 @@ from odoo.tools import float_compare
 
 _LINE_STATES = [
     ('pending', 'Pendiente'),
-    ('in_progress', 'En cotización'),
+    ('email_sent', 'Cotización enviada'),
+    ('in_progress', 'En RFQ'),
     ('to_receive', 'Por recepcionar'),
     ('partially_purchased', 'Parcialmente comprado'),
     ('purchased', 'Comprado'),
@@ -281,15 +282,22 @@ class PurchaseRequestLine(models.Model):
     # =========================== Métodos de actualización de estado ===========================
     def _update_state_from_purchase_lines(self):
         """
-        Actualiza el estado de la línea basándose en las líneas de compra vinculadas
-        y las cantidades recibidas.
+        Actualiza el estado de la línea basándose en las líneas de compra vinculadas,
+        las cantidades recibidas y los envíos de correo.
         """
         for rec in self:
+            if rec.line_state == 'cancel':
+                continue
+
+            # Si no tiene líneas de compra
             if not rec.purchase_lines:
-                if rec.line_state != 'cancel':
+                if rec.email_log_ids:
+                    rec.line_state = 'email_sent'
+                else:
                     rec.line_state = 'pending'
                 continue
 
+            # Si tiene líneas de compra, calcular según estado de PO y recepciones
             total_ordered = 0.0
             for po_line in rec.purchase_lines:
                 if po_line.state == 'cancel':
@@ -301,10 +309,9 @@ class PurchaseRequestLine(models.Model):
             received_qty = rec.qty_done
             in_progress_qty = rec.qty_in_progress
 
-            if rec.line_state == 'cancel':
-                continue
-            elif total_ordered <= 0:
-                rec.line_state = 'pending'
+            if total_ordered <= 0:
+                # No hay cantidades ordenadas (todas canceladas)
+                rec.line_state = 'email_sent' if rec.email_log_ids else 'pending'
             elif received_qty >= rec.product_qty:
                 rec.line_state = 'purchased'
             elif received_qty > 0 and received_qty < rec.product_qty:
@@ -312,7 +319,8 @@ class PurchaseRequestLine(models.Model):
             elif in_progress_qty > 0:
                 rec.line_state = 'to_receive' if total_ordered >= rec.product_qty else 'in_progress'
             else:
-                rec.line_state = 'in_progress' if total_ordered > 0 else 'pending'
+                rec.line_state = 'in_progress' if total_ordered > 0 else (
+                    'email_sent' if rec.email_log_ids else 'pending')
 
             rec.request_id._check_all_lines_purchased()
 
