@@ -201,11 +201,11 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         first_line = selected_lines[0].request_line_id
         request = first_line.request_id
 
-        origin = request.origin or request.name
+        # origin = request.origin or request.name
 
         po_vals = {
             'partner_id': supplier.id,
-            'origin': origin,
+            # 'origin': origin,
             'company_id': request.company_id.id,
             'picking_type_id': request.picking_type_id.id,
             'currency_id': request.currency_id.id,

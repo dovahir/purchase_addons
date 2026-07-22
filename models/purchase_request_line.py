@@ -86,11 +86,11 @@ class PurchaseRequestLine(models.Model):
     #     compute_sudo=True,
     #     store=True,
     # )
-    origin = fields.Char(
-        string='Origen',
-        help='Documento o proceso que origina la solicitud',
-        tracking=True,
-    )
+    # origin = fields.Char(
+    #     string='Origen',
+    #     help='Documento o proceso que origina la solicitud',
+    #     tracking=True,
+    # )
 
     # ===== Nuevos campos =====
     line_state = fields.Selection(
@@ -407,7 +407,7 @@ class PurchaseRequestLine(models.Model):
         for line in lines:
             if line.request_id.state == 'draft':
                 line.request_id.message_post(
-                    body=_('Línea %s agregada.') % (line.name or line.product_id.display_name),
+                    body=_('Producto %s agregado.') % (line.name or line.product_id.display_name),
                 )
         return lines
 

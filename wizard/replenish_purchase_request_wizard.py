@@ -78,12 +78,12 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
 
         # Actualizar origen de la solicitud si se agregaron líneas
         if added_lines:
-            if not request.origin:
-                request.write({'origin': _('Reabastecimiento')})
-            else:
-                # Usar f-string para mayor claridad
-                if 'Reabastecimiento' not in request.origin:
-                    request.write({'origin': f"{request.origin}, Reabastecimiento"})
+            # if not request.origin:
+            #     request.write({'origin': _('Reabastecimiento')})
+            # else:
+            #     # Usar f-string para mayor claridad
+            #     if 'Reabastecimiento' not in request.origin:
+            #         request.write({'origin': f"{request.origin}, Reabastecimiento"})
 
             # Mensaje en el chatter
             request.message_post(

@@ -92,25 +92,25 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             added_lines.append(new_line)
 
         # Actualizar origen de la solicitud si se agregaron líneas
-        if added_lines:
-            origins = []
-            for wiz_line in selected_lines:
-                if wiz_line.requisition_line_id and wiz_line.requisition_line_id.requisition_product_id:
-                    origins.append(wiz_line.requisition_line_id.requisition_product_id.name)
-            origins = list(set(origins))  # eliminar duplicados
-            if origins and not request.origin:
-                request.write({'origin': ', '.join(origins)})
-            elif origins:
-                current_origin = request.origin or ''
-                new_origins = [o for o in origins if o not in current_origin]
-                if new_origins:
-                    request.write({'origin': current_origin + ', ' + ', '.join(new_origins)})
-
-            # Mensaje en el chatter de la solicitud
-            request.message_post(
-                body=_('Se agregaron %d líneas desde la requisición %s.')
-                % (len(added_lines), self.requisition_id.name)
-            )
+        # if added_lines:
+        #     origins = []
+        #     for wiz_line in selected_lines:
+        #         if wiz_line.requisition_line_id and wiz_line.requisition_line_id.requisition_product_id:
+        #             origins.append(wiz_line.requisition_line_id.requisition_product_id.name)
+        #     origins = list(set(origins))  # eliminar duplicados
+        #     if origins and not request.origin:
+        #         request.write({'origin': ', '.join(origins)})
+        #     elif origins:
+        #         current_origin = request.origin or ''
+        #         new_origins = [o for o in origins if o not in current_origin]
+        #         if new_origins:
+        #             request.write({'origin': current_origin + ', ' + ', '.join(new_origins)})
+        #
+        #     # Mensaje en el chatter de la solicitud
+        #     request.message_post(
+        #         body=_('Se agregaron %d líneas desde la requisición %s.')
+        #         % (len(added_lines), self.requisition_id.name)
+        #     )
 
         # Construir mensaje de notificación
         message = _('Se agregaron %d líneas a la solicitud %s.') % (

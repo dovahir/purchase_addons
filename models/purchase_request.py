@@ -45,11 +45,11 @@ class PurchaseRequest(models.Model):
                        readonly=True,
                        copy=False, index=True,
     )
-    origin = fields.Char(
-        string='Origen',
-        help='Documento o proceso que origina la solicitud',
-        tracking=True,
-    )
+    # origin = fields.Char(
+    #     string='Origen',
+    #     help='Documento o proceso que origina la solicitud',
+    #     tracking=True,
+    # )
     # date_start = fields.Date(
     #     string='Fecha de creación',
     #     default=fields.Date.context_today,
@@ -121,6 +121,14 @@ class PurchaseRequest(models.Model):
     currency_id = fields.Many2one(
         related='company_id.currency_id',
         readonly=True,
+    )
+    requisition_ids = fields.Many2many(
+        comodel_name='employee.purchase.requisition',
+        string='Requisiciones origen',
+        compute='_compute_requisition_ids',
+        store=True,
+        readonly=True,
+        help='Requisiciones que originaron las líneas de esta solicitud'
     )
 
     # Campos para envío de cotización por correo (temporales)
@@ -307,6 +315,12 @@ class PurchaseRequest(models.Model):
         for rec in self:
             moves = rec.mapped('line_ids.purchase_request_allocation_ids.stock_move_id')
             rec.move_count = len(moves)
+
+    @api.depends('line_ids.requisition_id')
+    def _compute_requisition_ids(self):
+        for request in self:
+            reqs = request.line_ids.mapped('requisition_id').filtered(bool)
+            request.requisition_ids = [(6, 0, reqs.ids)]
 
     # =========================== Acciones de botones ===========================
     def action_close(self):
