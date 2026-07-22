@@ -95,6 +95,12 @@
         <field name="arch" type="xml">
             <form string="Línea de Solicitud" create="false" duplicate="false">
                 <header>
+                        <button name="action_cancel_line"
+                                type="object"
+                                string="Cancelar línea"
+                                class="btn-danger"
+                                invisible="line_state in ('cancel','purchased')"
+                                confirm="¿Está seguro de cancelar esta línea? Esta acción puede afectar órdenes de compra asociadas."/>
                     <field name="line_state" widget="statusbar"
                            statusbar_visible="pending,email_sent,in_progress,to_receive,partially_purchased,purchased,cancel"
                            readonly="1"/>

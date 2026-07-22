@@ -72,7 +72,7 @@ class PurchaseOrder(models.Model):
                         lines_for_req = to_update.filtered(lambda l: l.request_id == req)
                         names = [l.name or l.product_id.display_name for l in lines_for_req]
                         req.message_post(
-                            body=_('La orden de compra %s ha sido confirmada. Las líneas %s están pendientes de recepción.')
+                            body=_('La PO %s ha sido confirmada. Los productos %s están pendientes de recepción.')
                             % (order.name, ', '.join(names))
                         )
         return res
@@ -91,7 +91,7 @@ class PurchaseOrder(models.Model):
                         line._update_state_from_purchase_lines()
                     for req in to_update.mapped('request_id'):
                         req.message_post(
-                            body=_('La orden de compra %s ha sido cancelada. Se ha actualizado el estado de las líneas relacionadas.')
+                            body=_('La RFQ %s ha sido cancelada. Se ha actualizado el estado de las líneas relacionadas.')
                             % order.name
                         )
         return res

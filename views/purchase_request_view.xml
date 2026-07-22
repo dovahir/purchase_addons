@@ -31,7 +31,7 @@
                 <field name="purchase_count" string="Órdenes" optional="hide"/>
                 <field name="state" widget="badge"
                        decoration-muted="state == 'cancel'"
-                       decoration-info="state in ('draft','in_progress')"
+                       decoration-info="state in ('draft','email_sent','in_progress')"
                        decoration-success="state == 'done'"/>
             </tree>
         </field>

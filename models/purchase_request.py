@@ -344,34 +344,16 @@ class PurchaseRequest(models.Model):
             rec.write({'state': 'draft'})
 
     def action_cancel(self):
-        """Cancelar la solicitud y manejar sus líneas según corresponda."""
         self.ensure_one()
         if self.state in ('done', 'cancel'):
             raise UserError(_('No se puede cancelar una solicitud ya completada o cancelada.'))
 
-        non_cancelable_lines = self.line_ids.filtered(
-            lambda l: l.line_state in ('to_receive', 'partially_purchased', 'purchased')
-        )
-        if non_cancelable_lines:
-            warning_msg = _(
-                'Las siguientes líneas están en estado de recepción o ya compradas y no serán afectadas:\n'
-            ) + '\n'.join([f'  - {l.name or l.product_id.display_name}' for l in non_cancelable_lines])
-            raise UserError(warning_msg)
-
-        # Líneas en pending -> cancel
-        pending_lines = self.line_ids.filtered(lambda l: l.line_state == 'pending')
-        pending_lines.write({'line_state': 'cancel'})
-
-        # Líneas en in_progress -> manejar reducción de cantidades o cancelación de PO
-        in_progress_lines = self.line_ids.filtered(lambda l: l.line_state == 'in_progress')
-        for line in in_progress_lines:
-            line._cancel_line()
+        for line in self.line_ids:
+            if line.line_state != 'cancel':
+                line.action_cancel_line()
 
         self.write({'state': 'cancel'})
-        self.message_post(
-            body=_('La solicitud ha sido cancelada.'),
-            subtype_id=self.env.ref('mail.mt_comment').id,
-        )
+        self.message_post(body=_('Solicitud cancelada. Se procesaron todas las líneas.'))
 
     def _check_all_lines_purchased(self):
         """Si todas las líneas están en 'purchased', cambiar el estado a 'done'."""
