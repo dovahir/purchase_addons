@@ -1,7 +1,13 @@
-from odoo import models, api, _
+from odoo import models, api, fields, _
 
 class PurchaseRequisitionExt(models.Model):
     _inherit = 'employee.purchase.requisition'
+
+    purchase_request_count = fields.Integer(
+        string='Solicitudes de insumos',
+        compute='_compute_purchase_request_count',
+        help='Número de solicitudes de insumos vinculadas a esta requisición'
+    )
 
     def action_open_requi_purchase_request_wizard(self):
         self.ensure_one()
@@ -31,3 +37,19 @@ class PurchaseRequisitionExt(models.Model):
             'view_mode': 'form',
             'target': 'new',
         }
+
+    def _compute_purchase_request_count(self):
+        for req in self:
+            req.purchase_request_count = self.env['purchase.request'].search_count(
+                [('requisition_ids', 'in', req.id)]
+            )
+
+    def action_open_purchase_requests(self):
+        """Abre la lista de solicitudes de insumos vinculadas a esta requisición"""
+        self.ensure_one()
+        action = self.env['ir.actions.actions']._for_xml_id(
+            'purchase_addons.action_purchase_request_form'
+        )
+        action['domain'] = [('requisition_ids', 'in', self.id)]
+        action['context'] = {}
+        return action
