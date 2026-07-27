@@ -56,6 +56,14 @@ class PurchaseOrder(models.Model):
         return action
 
     # ===== Sobrescritura de métodos =====
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        for record in res:
+            partners = record.partner_id | record.partner_id.commercial_partner_id
+            partners._increase_rank("supplier_rank")
+        return res
+
     def button_confirm(self):
         """Al confirmar la orden, actualizar el estado de las líneas de solicitud vinculadas."""
         res = super().button_confirm()
