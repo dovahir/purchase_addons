@@ -61,8 +61,8 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
             'name': f'Cotizacion_{self.partner_id.name}_{fields.Datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf',
             'type': 'binary',
             'datas': base64.b64encode(pdf_content),
-            'res_model': 'purchase.request.line',  # Adjuntamos a la primera línea (o podríamos no asignar res_model)
-            'res_id': selected_lines[0].id if selected_lines else False,
+            'res_model': 'purchase.request.line',
+            'res_id': selected_lines[0].id,  # O puedes dejar False y vincularlo solo al mensaje
             'mimetype': 'application/pdf',
         })
 
@@ -88,7 +88,7 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
             # Publicar mensaje en el chatter de la línea con el attachment
             line.message_post(
                 body=_('Cotización enviada a %s por correo.') % self.partner_id.name,
-                attachment_ids=[(4, attachment.id)]  # <--- AQUÍ SE VINCULA EL PDF
+                attachment_ids=[attachment.id]  # <--- AQUÍ SE VINCULA EL PDF
             )
             # Si la línea estaba en 'pending', pasa a 'email_sent'
             if line.line_state == 'pending':
