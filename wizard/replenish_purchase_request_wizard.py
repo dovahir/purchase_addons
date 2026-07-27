@@ -38,6 +38,7 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
             # Crear nueva línea directamente
             new_line_vals = {
                 # request_id eliminado
+                'requester_name': self.env.user.name,
                 'product_id': product.id,
                 'product_uom_id': uom.id,
                 'product_qty': qty,

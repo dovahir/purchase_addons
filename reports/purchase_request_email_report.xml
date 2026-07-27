@@ -1,16 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-    <!-- Definición del reporte PDF -->
-    <record id="report_purchase_request_email_pdf" model="ir.actions.report">
-        <field name="name">Cotización por correo</field>
-        <field name="model">purchase.request</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">purchase_addons.report_purchase_request_email_content</field>
-        <field name="report_file">purchase_addons.report_purchase_request_email_content</field>
-        <field name="print_report_name">'Cotizacion_%s_%s' % (object.name or '', fields.Datetime.now().strftime('%Y%m%d'))</field>
-    </record>
-
-    <!-- Plantilla QWeb del reporte -->
     <template id="report_purchase_request_email_content">
         <t t-call="web.html_container">
             <div class="page">
@@ -20,19 +9,14 @@
                 <!-- Datos de cabecera -->
                 <div class="row mt32 mb32">
                     <div class="col-auto">
-                        <strong>Solicitud:</strong>
-                        <br/>
-                        <span t-field="object.name"/>
-                    </div>
-                    <div class="col-auto">
                         <strong>Fecha:</strong>
                         <br/>
-                        <span t-field="object.create_date"/>
+                        <span t-esc="date"/>
                     </div>
                     <div class="col-auto">
                         <strong>Empresa:</strong>
                         <br/>
-                        <span t-field="object.company_id.name"/>
+                        <span t-esc="company_name"/>
                     </div>
                     <div class="col-auto">
                         <strong>Proveedor:</strong>
@@ -53,14 +37,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Usar la variable 'selected_lines' directamente -->
-                        <tr t-foreach="selected_lines" t-as="line">
+                        <tr t-foreach="lines" t-as="line">
                             <td><span t-field="line.product_id.display_name"/></td>
                             <td><span t-field="line.note"/></td>
                             <td class="text-right"><span t-field="line.product_qty"/></td>
                             <td class="text-center"><span t-field="line.product_uom_id.name"/></td>
                         </tr>
-                        <tr t-if="not selected_lines">
+                        <tr t-if="not lines">
                             <td colspan="4" class="text-center text-muted">
                                 No hay productos seleccionados.
                             </td>

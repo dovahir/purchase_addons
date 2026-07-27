@@ -12,7 +12,6 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
     partner_id = fields.Many2one(
         comodel_name='res.partner',
         string='Proveedor',
-        required=True,
         help='Proveedor al que se enviará la cotización',
     )
     line_ids = fields.One2many(
@@ -86,8 +85,10 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
                 'date_sent': fields.Datetime.now(),
                 'subject': self.subject or 'Cotización de productos',
             })
+            # Publicar mensaje en el chatter de la línea con el attachment
             line.message_post(
-                body=_('Cotización enviada a %s por correo.') % self.partner_id.name
+                body=_('Cotización enviada a %s por correo.') % self.partner_id.name,
+                attachment_ids=[(4, attachment.id)]  # <--- AQUÍ SE VINCULA EL PDF
             )
             # Si la línea estaba en 'pending', pasa a 'email_sent'
             if line.line_state == 'pending':
@@ -113,7 +114,7 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
             'lines': lines,
             'partner_name': self.partner_id.name,
             'company_name': self.company_id.name,
-            'date': fields.Date.today(),
+            'date': fields.Date.today().strftime('%Y-%m-%d'),
         }
 
         try:
@@ -130,7 +131,7 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
         if not html_content:
             raise UserError(_('El template no generó contenido HTML.'))
 
-        # Asegurar HTML completo
+        # Asegurar HTML completo (mantener igual)
         full_html = f"""
         <!DOCTYPE html>
         <html>
@@ -160,7 +161,6 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
 
     @api.model
     def default_get(self, fields_list):
-        """Precarga las líneas seleccionadas en el wizard."""
         defaults = super().default_get(fields_list)
 
         active_model = self.env.context.get('active_model')
@@ -169,7 +169,7 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
         if active_model == 'purchase.request.line' and active_ids:
             lines = self.env['purchase.request.line'].browse(active_ids)
             valid_lines = lines.filtered(
-                lambda l: l.line_state in ('pending', 'email_sent', 'in_progress')
+                lambda l: l.line_state not in ('cancel', 'purchased')
             )
             if valid_lines and 'line_ids' in fields_list:
                 line_vals = []
@@ -178,7 +178,7 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
                         'request_line_id': line.id,
                         'selected': True,
                         'product_id': line.product_id.id,
-                        'product_qty': line.pending_qty_to_receive or line.product_qty,
+                        'product_qty': line.product_qty,
                         'uom_id': line.product_uom_id.id,
                         'note': line.note,
                     }))

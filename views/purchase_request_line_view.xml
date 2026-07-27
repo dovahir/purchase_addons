@@ -19,6 +19,7 @@
                             icon="fa-shopping-cart"
                             class="btn-primary"/>
                 </header>
+                <field name="product_uom_category_id" column_invisible="1"/>
                 <field name="priority" widget="badge" optional="show"
                        decoration-warning="priority == 'urgent'"/>
                 <field name="line_state" widget="badge"
@@ -30,8 +31,15 @@
                 <field name="product_qty" string="Cant. Solicitada"/>
                 <field name="product_uom_id" string="UoM" groups="uom.group_uom" options="{'no_create': True}"/>
                 <field name="requisition_id" string="Requisición" optional="show" widget="many2one"/>
+                <field name="requester_name" string="Solicitado por" optional="show"/>
+                <field name="analytic_distribution"
+                       string="Dist. Analítica"
+                       widget="analytic_distribution"
+                       groups="analytic.group_analytic_accounting"
+                       options="{'product_field': 'product_id', 'business_domain': 'req'}"/>
                 <field name="project_id" string="Proyecto" optional="show"/>
                 <field name="task_id" string="Tarea" optional="show"/>
+                <field name="create_date" string="Fecha de creación"/>
                 <field name="date_required" string="Fecha requerida"/>
                 <field name="is_replenishment" string="Reabastecimiento" optional="show" widget="boolean"/>
                 <field name="purchase_state" string="Estado de compra" optional="show"
@@ -143,11 +151,11 @@
                     </div>
 
                     <group name="main">
-                        <group name="settings">
+                        <group name="details" string="">
                             <field name="product_id" readonly="line_state != 'draft'"/>
-                            <field name="product_qty" readonly="line_state != 'draft'"/>
-                            <field name="product_uom_category_id" invisible="1"/>
-                            <field name="product_uom_id" groups="uom.group_uom" readonly="1"/>
+                            <field name="create_date"
+                                   string="Fecha de creación"
+                                   readonly="1"/>
                             <field name="date_required" readonly="line_state != 'draft'"/>
                             <field name="priority" widget="badge" readonly="line_state != 'draft'"/>
                             <field name="is_replenishment" widget="boolean" readonly="1"/>
@@ -155,29 +163,26 @@
                                    invisible="not requisition_id"
                                    help="Requisición origen"/>
                             <field name="note" readonly="line_state != 'draft'"/>
+                            <field name="requester_name" readonly="1" string="Solicitado por" placeholder="Nombre de quien solicita"/>
                         </group>
-                        <group name="info">
-                            <field name="create_date" readonly="1"/>
-<!--                            <field name="company_id" groups="base.group_multi_company" widget="selection" readonly="1"/>-->
+                        <group name="quantities" string="">
+                            <field name="product_uom_category_id" invisible="1"/>
+                            <field name="product_uom_id" groups="uom.group_uom" readonly="1"/>
+                            <field name="product_qty" readonly="line_state != 'draft'"/>
+                            <field name="pending_qty_to_buy" string="Pendiente por comprar"/>
+                            <field name="qty_in_progress" string="En proceso"/>
+                            <field name="qty_done" string="Recibido"/>
+                            <field name="qty_cancelled" string="Cancelado"/>
                         </group>
                     </group>
 
-                    <group name="project_group" string="Proyecto / Tarea">
+                    <group name="project_group" string="Proyecto / Tarea" invisible="is_replenishment">
                         <field name="project_id" readonly="line_state != 'draft'"/>
                         <field name="task_id" readonly="line_state != 'draft'" options="{'no_create': True}"/>
                         <field name="analytic_distribution" widget="analytic_distribution"
                                groups="analytic.group_analytic_accounting"
                                readonly="line_state != 'draft'"
                                options="{'product_field': 'product_id', 'business_domain': 'purchase_order'}"/>
-                    </group>
-
-                    <group name="quantities" string="Seguimiento de cantidades">
-                        <group>
-                            <field name="pending_qty_to_buy" string="Pendiente por comprar"/>
-                            <field name="qty_in_progress" string="En proceso"/>
-                            <field name="qty_done" string="Recibido"/>
-                            <field name="qty_cancelled" string="Cancelado"/>
-                        </group>
                     </group>
 
                     <notebook>

@@ -18,22 +18,23 @@
                 <group>
                     <!-- Proveedor (obligatorio) -->
                     <field name="supplier_id"
-                           required="1"
+                           invisible="purchase_order_id"
+                           required="not purchase_order_id"
                            options="{'no_create': True}"
                            placeholder="Seleccione un proveedor"/>
                     <!-- Cotización existente (opcional) -->
                     <field name="purchase_order_id"
                            options="{'no_create': True}"
-                           placeholder="Seleccione una cotización existente (opcional)"
+                           placeholder="Deje vacio este campo para crear una RFQ nueva"
                            domain="[('state', 'in', ['draft', 'sent']), ('partner_id', '=', supplier_id)]"/>
                 </group>
 
                 <!-- Campos para nueva RFQ (se ocultan si se selecciona una existente) -->
-                <group string="Datos para nueva cotización" invisible="purchase_order_id">
+                <group string="Datos para nueva RFQ" invisible="purchase_order_id">
                     <field name="purchaser_id" required="1" placeholder="Comprador"/>
                     <field name="picking_type_id" required="1" placeholder="Entregar en"/>
                     <field name="company_id" required="1" placeholder="Compañía"/>
-                    <field name="group_id" placeholder="Grupo de aprovisionamiento (opcional)"/>
+                    <field name="group_id" invisible="1" placeholder="Grupo de aprovisionamiento (opcional)"/>
                 </group>
 
                 <!-- Líneas seleccionadas -->

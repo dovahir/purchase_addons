@@ -92,7 +92,13 @@ class PurchaseRequestLine(models.Model):
     #     help='Documento o proceso que origina la solicitud',
     #     tracking=True,
     # )
-
+    requester_name = fields.Char(
+        string='Solicitado por',
+        help='Nombre de la persona que solicitó la compra',
+        readonly=True,
+        copy=False,
+        index=True,
+    )
     # ===== Nuevos campos =====
     line_state = fields.Selection(
         selection=_LINE_STATES,
@@ -204,6 +210,12 @@ class PurchaseRequestLine(models.Model):
         copy=False,
     )
 
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        if 'requester_name' in fields_list and not defaults.get('requester_name'):
+            defaults['requester_name'] = self.env.user.name
+        return defaults
     # =========================== Computed ===========================
     # @api.depends('product_id', 'product_id.seller_ids')
     # def _compute_supplier_id(self):
@@ -542,18 +554,18 @@ class PurchaseRequestLine(models.Model):
         return action
 
     def action_open_send_email_wizard(self):
-        """Abre el wizard de envío de correo desde el tree de líneas."""
+        """Abre el wizard de envío de correo con las líneas seleccionadas."""
         wizard = self.env['purchase.request.send.email.wizard'].create({
             'line_ids': [
                 (0, 0, {
                     'request_line_id': line.id,
                     'selected': True,
                     'product_id': line.product_id.id,
-                    'product_qty': line.pending_qty_to_receive or line.product_qty,
+                    'product_qty': line.product_qty,
                     'uom_id': line.product_uom_id.id,
                     'note': line.note,
                 }) for line in self.filtered(
-                    lambda l: l.line_state in ('pending', 'in_progress')
+                    lambda l: l.line_state not in ('cancel', 'purchased')
                 )
             ]
         })

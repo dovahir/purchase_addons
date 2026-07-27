@@ -73,6 +73,7 @@ class RequiPurchaseRequestWizard(models.TransientModel):
                 'product_uom_id': wizard_line.uom_id.id,
                 'product_qty': wizard_line.product_qty,
                 'date_required': self.requisition_id.requisition_deadline or fields.Date.today(),
+                'requester_name': wizard_line.requisition_line_id.requisition_product_id.employee_id.sudo().name,
                 'name': wizard_line.product_id.display_name,
                 'project_id': wizard_line.project_id.id if wizard_line.project_id else False,
                 'task_id': wizard_line.task_id.id if wizard_line.task_id else False,
