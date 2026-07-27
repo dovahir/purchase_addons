@@ -6,15 +6,9 @@ from odoo.exceptions import UserError
 
 class ReplenishPurchaseRequestWizard(models.TransientModel):
     _name = 'replenish.purchase.request.wizard'
-    _description = 'Agregar productos de reabastecimiento a solicitud de insumos'
+    _description = 'Agregar productos de reabastecimiento como líneas de solicitud'
 
-    purchase_request_id = fields.Many2one(
-        comodel_name='purchase.request',
-        string='Solicitud de insumos',
-        domain="[('state', '=', 'draft')]",
-        # required=True,
-        help='Seleccione una solicitud en estado Activa',
-    )
+    # purchase_request_id eliminado
     line_ids = fields.One2many(
         comodel_name='replenish.purchase.request.wizard.line',
         inverse_name='wizard_id',
@@ -22,11 +16,8 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
     )
 
     def add_to_request(self):
-        """Agrega los productos seleccionados a la solicitud de insumos."""
+        """Agrega los productos seleccionados como nuevas líneas de solicitud."""
         self.ensure_one()
-        request = self.purchase_request_id
-        if not request:
-            raise UserError(_('Debe seleccionar una solicitud de insumos.'))
 
         lines = self.line_ids.filtered(lambda l: l.product_qty > 0)
         if not lines:
@@ -41,28 +32,12 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
             qty = wizard_line.product_qty
 
             if not product:
-                # Si por algún motivo el producto no está definido, se omite
                 skipped_lines.append(wizard_line)
                 continue
 
-            # Buscar si ya existe una línea de reabastecimiento con el mismo producto y UoM
-            existing = request.line_ids.filtered(
-                lambda l: l.product_id == product
-                and l.product_uom_id == uom
-                and l.is_replenishment == True
-            )
-
-            if existing:
-                # Sumar la cantidad a la línea existente usando write() para disparar recomputes
-                existing_line = existing[0]
-                new_qty = existing_line.product_qty + qty
-                existing_line.write({'product_qty': new_qty})
-                added_lines.append(existing_line)
-                continue
-
-            # Crear nueva línea
+            # Crear nueva línea directamente
             new_line_vals = {
-                'request_id': request.id,
+                # request_id eliminado
                 'product_id': product.id,
                 'product_uom_id': uom.id,
                 'product_qty': qty,
@@ -76,26 +51,11 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
             new_line = self.env['purchase.request.line'].create(new_line_vals)
             added_lines.append(new_line)
 
-        # Actualizar origen de la solicitud si se agregaron líneas
-        if added_lines:
-            # if not request.origin:
-            #     request.write({'origin': _('Reabastecimiento')})
-            # else:
-            #     # Usar f-string para mayor claridad
-            #     if 'Reabastecimiento' not in request.origin:
-            #         request.write({'origin': f"{request.origin}, Reabastecimiento"})
+            # Publicar mensaje en el chatter de la línea
+            new_line.message_post(body=_('Creada desde reabastecimiento.'))
 
-            # Mensaje en el chatter
-            request.message_post(
-                body=_('Se agregaron %d productos desde reabastecimiento.')
-                % len(added_lines)
-            )
-
-        # Construir mensaje de notificación
-        message = _('Se agregaron %d productos a la solicitud %s.') % (
-            len(added_lines),
-            request.name or ''
-        )
+        # Mensaje de éxito
+        message = _('Se agregaron %d productos desde reabastecimiento.') % len(added_lines)
         if skipped_lines:
             skipped_names = ', '.join([l.product_id.display_name for l in skipped_lines if l.product_id])
             if skipped_names:
@@ -129,7 +89,7 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
                 for orderpoint in orderpoints:
                     line_vals.append(fields.Command.create({
                         'product_id': orderpoint.product_id.id,
-                        'product_qty': 1.0,  # Cantidad por defecto, el usuario la editará
+                        'product_qty': 1.0,
                         'uom_id': orderpoint.product_uom.id or orderpoint.product_id.uom_id.id,
                         'note': '',
                     }))

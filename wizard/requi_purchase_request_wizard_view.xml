@@ -9,11 +9,11 @@
                 <group>
                     <field name="requisition_id" invisible="1"/>
                     <field name="company_id" invisible="1"/>
-                    <field name="purchase_request_id"
-                           options="{'no_create': True}"
-                           placeholder="Seleccione una solicitud de insumos activa"
-                           domain="[('state', '=', 'draft')]"
-                           required="1"/>
+<!--                    <field name="purchase_request_id"-->
+<!--                           options="{'no_create': True}"-->
+<!--                           placeholder="Seleccione una solicitud de insumos activa"-->
+<!--                           domain="[('state', '=', 'draft')]"-->
+<!--                           required="1"/>-->
                 </group>
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">

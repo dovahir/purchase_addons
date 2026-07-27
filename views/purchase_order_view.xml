@@ -7,23 +7,22 @@
         <field name="model">purchase.order</field>
         <field name="inherit_id" ref="purchase.purchase_order_form"/>
         <field name="arch" type="xml">
-            <!-- Smart button en el button_box (corregido para Odoo v17) -->
+            <!-- Smart button en el button_box (ahora apunta a líneas origen) -->
             <xpath expr="//div[@name='button_box']" position="inside">
-                <button name="action_open_purchase_requests" type="object"
+                <button name="action_open_purchase_request_lines" type="object"
                         class="oe_stat_button"
                         icon="fa-file-text-o"
-                        invisible="purchase_request_count == 0">
-                    <field name="purchase_request_count" widget="statinfo" string="Soli. de Insumos"/>
+                        invisible="purchase_request_line_count == 0">
+                    <field name="purchase_request_line_count" widget="statinfo" string="Líneas origen"/>
                 </button>
             </xpath>
 
-            <!-- Campos ocultos en la cabecera para trazabilidad -->
+            <!-- Campo oculto para trazabilidad (solo el Many2many a líneas) -->
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="purchase_request_ids" invisible="1"/>
                 <field name="purchase_request_line_ids" invisible="1"/>
             </xpath>
 
-            <!-- Inyección en el tree de líneas de compra (corregido) -->
+            <!-- Inyección en el tree de líneas de compra -->
             <xpath expr="//field[@name='order_line']/tree//field[@name='price_subtotal']" position="after">
                 <field name="purchase_request_lines" column_invisible="1"/>
                 <button name="action_open_request_line_tree_view" type="object"

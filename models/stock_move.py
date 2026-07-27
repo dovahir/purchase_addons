@@ -45,6 +45,10 @@ class StockMove(models.Model):
         return res
 
     def _action_done(self, cancel_backorder=False):
+        """
+        Sobrescritura del método _action_done en Odoo v17.
+        Al validar el movimiento (recepción), actualizar las asignaciones y las líneas de solicitud.
+        """
         res = super()._action_done(cancel_backorder=cancel_backorder)
 
         for move in self:
@@ -81,20 +85,16 @@ class StockMove(models.Model):
                 # Actualizar el estado de la línea de solicitud
                 request_line._update_state_from_purchase_lines()
 
-                # Si se completó, marcar como 'purchased'
+                # Si la línea de solicitud está completamente recibida, marcar como 'purchased'
                 if request_line.qty_done >= request_line.product_qty:
                     request_line.write({'line_state': 'purchased'})
-                    request_line.request_id._check_all_lines_purchased()
-                    request_line.request_id.message_post(
-                        body=_('Línea %s completada (recepción total).') % (
-                                request_line.name or request_line.product_id.display_name
-                        )
+                    request_line.message_post(
+                        body=_('Línea completada (recepción total).')
                     )
                 elif request_line.qty_done > 0:
                     request_line.write({'line_state': 'partially_purchased'})
-                    request_line.request_id.message_post(
-                        body=_('Línea %s parcialmente recibida (%.2f de %.2f %s).') % (
-                            request_line.name or request_line.product_id.display_name,
+                    request_line.message_post(
+                        body=_('Línea parcialmente recibida (%.2f de %.2f %s).') % (
                             request_line.qty_done,
                             request_line.product_qty,
                             request_line.product_uom_id.name,

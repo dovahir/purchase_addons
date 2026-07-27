@@ -30,7 +30,7 @@
         'security/ir.model.access.csv',
 
         # Datos
-        'data/purchase_request_sequence.xml',
+        # 'data/purchase_request_sequence.xml',
 
         # Reportes
         'reports/purchase_request_email_report.xml',
@@ -42,7 +42,7 @@
 
         # Vistas principales
         'views/res_partner.xml',
-        'views/purchase_request_view.xml',
+        # 'views/purchase_request_view.xml',
         'views/purchase_request_line_view.xml',
         'views/purchase_order_view.xml',
         'views/stock_move_views.xml',

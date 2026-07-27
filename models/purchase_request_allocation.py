@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
 
 
 class PurchaseRequestAllocation(models.Model):
@@ -19,10 +18,10 @@ class PurchaseRequestAllocation(models.Model):
     company_id = fields.Many2one(
         comodel_name='res.company',
         string='Compañía',
-        readonly=True,
-        related='purchase_request_line_id.request_id.company_id',
+        compute='_compute_company_id',
         store=True,
         index=True,
+        help='Compañía determinada a partir de la línea de compra o movimiento de stock'
     )
     stock_move_id = fields.Many2one(
         comodel_name='stock.move',
@@ -71,14 +70,20 @@ class PurchaseRequestAllocation(models.Model):
         related='purchase_line_id.order_id.state',
         string='Estado de compra',
         store=True,
-        related_sudo=True,  # Evita errores de permisos al calcular desde inventario
+        related_sudo=True,
     )
 
-    @api.depends(
-        'requested_product_uom_qty',
-        'allocated_product_qty',
-        'purchase_state',
-    )
+    @api.depends('purchase_line_id.order_id.company_id', 'stock_move_id.company_id')
+    def _compute_company_id(self):
+        for rec in self:
+            company = False
+            if rec.purchase_line_id:
+                company = rec.purchase_line_id.order_id.company_id
+            elif rec.stock_move_id:
+                company = rec.stock_move_id.company_id
+            rec.company_id = company
+
+    @api.depends('requested_product_uom_qty', 'allocated_product_qty', 'purchase_state')
     def _compute_open_product_qty(self):
         """Calcula la cantidad pendiente (open) para cada asignación."""
         for rec in self:
@@ -92,16 +97,16 @@ class PurchaseRequestAllocation(models.Model):
 
     def _notify_allocation(self, allocated_qty):
         """
-        Notifica en el chatter de la solicitud cuando se asigna una cantidad.
+        Notifica en el chatter de la línea de solicitud cuando se asigna una cantidad.
         allocated_qty debe ser la cantidad específica para esta asignación.
         """
         if not allocated_qty:
             return
         for allocation in self:
-            request = allocation.purchase_request_line_id.request_id
+            line = allocation.purchase_request_line_id
             po_line = allocation.purchase_line_id
             if po_line:
-                request.message_post(
+                line.message_post(
                     body=_(
                         'Se ha asignado %.2f %s del producto %s a la línea de compra %s.'
                     ) % (
@@ -112,7 +117,7 @@ class PurchaseRequestAllocation(models.Model):
                     )
                 )
             elif allocation.stock_move_id:
-                request.message_post(
+                line.message_post(
                     body=_(
                         'Se ha asignado %.2f %s del producto %s al movimiento de stock %s.'
                     ) % (

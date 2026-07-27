@@ -7,11 +7,11 @@
         <field name="arch" type="xml">
             <form string="Agregar productos de reabastecimiento a solicitud de insumos">
                 <group>
-                    <field name="purchase_request_id"
-                           options="{'no_create': True}"
-                           placeholder="Seleccione una solicitud de insumos activa"
-                           domain="[('state', '=', 'draft')]"
-                           required="1"/>
+<!--                    <field name="purchase_request_id"-->
+<!--                           options="{'no_create': True}"-->
+<!--                           placeholder="Seleccione una solicitud de insumos activa"-->
+<!--                           domain="[('state', '=', 'draft')]"-->
+<!--                           required="1"/>-->
                 </group>
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">

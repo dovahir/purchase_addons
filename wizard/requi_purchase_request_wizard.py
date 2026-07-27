@@ -8,13 +8,7 @@ class RequiPurchaseRequestWizard(models.TransientModel):
     _name = 'requi.purchase.request.wizard'
     _description = 'Agregar líneas de requisición a solicitud de insumos'
 
-    purchase_request_id = fields.Many2one(
-        comodel_name='purchase.request',
-        string='Solicitud de insumos',
-        domain="[('state', '=', 'draft')]",
-        # required=True,
-        help='Seleccione una solicitud en estado Activa',
-    )
+    # Campo eliminado: purchase_request_id (ya no se usa)
     requisition_id = fields.Many2one(
         comodel_name='employee.purchase.requisition',
         string='Requisición',
@@ -31,11 +25,8 @@ class RequiPurchaseRequestWizard(models.TransientModel):
     )
 
     def add_to_request(self):
-        """Agrega las líneas seleccionadas a la solicitud de insumos."""
+        """Agrega las líneas seleccionadas como nuevas líneas de solicitud."""
         self.ensure_one()
-        request = self.purchase_request_id
-        if not request:
-            raise UserError(_('Debe seleccionar una solicitud de insumos.'))
 
         selected_lines = self.line_ids.filtered('selected')
         if not selected_lines:
@@ -62,18 +53,21 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             req_line = wizard_line.requisition_line_id
 
             # Verificar si ya existe una línea con el mismo producto y requisición origen
-            existing = request.line_ids.filtered(
-                lambda l: l.product_id == wizard_line.product_id
-                and l.requisition_product_id == req_line
-            )
-
+            # Ahora no hay cabecera, pero podemos verificar si ya existe alguna línea de solicitud
+            # con el mismo producto y origen (para evitar duplicados exactos)
+            # Como no hay cabecera, simplemente creamos la línea, pero podemos buscar líneas
+            # existentes con el mismo requisition_product_id que no estén canceladas
+            existing = self.env['purchase.request.line'].search([
+                ('requisition_product_id', '=', req_line.id),
+                ('line_state', '!=', 'cancel')
+            ], limit=1)
             if existing:
                 skipped_lines.append(wizard_line)
                 continue
 
             # Crear nueva línea en la solicitud
             new_line_vals = {
-                'request_id': request.id,
+                # request_id eliminado
                 'requisition_product_id': req_line.id,
                 'product_id': wizard_line.product_id.id,
                 'product_uom_id': wizard_line.uom_id.id,
@@ -91,31 +85,12 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             new_line = self.env['purchase.request.line'].create(new_line_vals)
             added_lines.append(new_line)
 
-        # Actualizar origen de la solicitud si se agregaron líneas
-        # if added_lines:
-        #     origins = []
-        #     for wiz_line in selected_lines:
-        #         if wiz_line.requisition_line_id and wiz_line.requisition_line_id.requisition_product_id:
-        #             origins.append(wiz_line.requisition_line_id.requisition_product_id.name)
-        #     origins = list(set(origins))  # eliminar duplicados
-        #     if origins and not request.origin:
-        #         request.write({'origin': ', '.join(origins)})
-        #     elif origins:
-        #         current_origin = request.origin or ''
-        #         new_origins = [o for o in origins if o not in current_origin]
-        #         if new_origins:
-        #             request.write({'origin': current_origin + ', ' + ', '.join(new_origins)})
-        #
-        #     # Mensaje en el chatter de la solicitud
-        #     request.message_post(
-        #         body=_('Se agregaron %d líneas desde la requisición %s.')
-        #         % (len(added_lines), self.requisition_id.name)
-        #     )
+        # Ya no actualizamos origin ni enviamos mensajes a cabecera
 
-        # Construir mensaje de notificación
-        message = _('Se agregaron %d líneas a la solicitud %s.') % (
+        # Mensaje de éxito
+        message = _('Se agregaron %d líneas desde la requisición %s.') % (
             len(added_lines),
-            request.name or ''
+            self.requisition_id.name
         )
         if skipped_lines:
             skipped_names = ', '.join([
@@ -125,6 +100,12 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             ])
             if skipped_names:
                 message += _('\n\nLíneas omitidas por ya existir en el destino:\n%s') % skipped_names
+
+        # Publicar mensaje en el chatter de cada línea creada
+        for line in added_lines:
+            line.message_post(
+                body=_('Creada desde la requisición %s.') % self.requisition_id.name
+            )
 
         # Retornar notificación
         return {

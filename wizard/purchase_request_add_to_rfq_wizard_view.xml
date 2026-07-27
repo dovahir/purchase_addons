@@ -1,22 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <odoo>
+    <record id="action_purchase_request_add_to_rfq" model="ir.actions.act_window">
+        <field name="name">Añadir a RFQ</field>
+        <field name="res_model">purchase.request.add.to.rfq.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_purchase_request_line"/>
+        <field name="binding_type">action</field>
+    </record>
+
     <record id="view_purchase_request_add_to_rfq_wizard_form" model="ir.ui.view">
         <field name="name">purchase.request.add.to.rfq.wizard.form</field>
         <field name="model">purchase.request.add.to.rfq.wizard</field>
         <field name="arch" type="xml">
             <form string="Agregar líneas a cotización">
                 <group>
+                    <!-- Proveedor (obligatorio) -->
                     <field name="supplier_id"
                            required="1"
                            options="{'no_create': True}"
                            placeholder="Seleccione un proveedor"/>
+                    <!-- Cotización existente (opcional) -->
                     <field name="purchase_order_id"
                            options="{'no_create': True}"
                            placeholder="Seleccione una cotización existente (opcional)"
                            domain="[('state', 'in', ['draft', 'sent']), ('partner_id', '=', supplier_id)]"/>
                 </group>
 
+                <!-- Campos para nueva RFQ (se ocultan si se selecciona una existente) -->
+                <group string="Datos para nueva cotización" invisible="purchase_order_id">
+                    <field name="purchaser_id" required="1" placeholder="Comprador"/>
+                    <field name="picking_type_id" required="1" placeholder="Entregar en"/>
+                    <field name="company_id" required="1" placeholder="Compañía"/>
+                    <field name="group_id" placeholder="Grupo de aprovisionamiento (opcional)"/>
+                </group>
+
+                <!-- Líneas seleccionadas -->
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">
                         <field name="wizard_id" column_invisible="1"/>
@@ -25,14 +45,14 @@
                         <field name="product_id" readonly="1" options="{'no_create': True}"/>
                         <field name="product_qty" string="Cantidad" decoration-bf="1"/>
                         <field name="uom_id" readonly="1"/>
-
-                        <field name="request_id" string="Solicitud" optional="hide"/>
+                        <!-- El estado de la línea (se obtiene de request_line_id.line_state) -->
                         <field name="line_state" string="Estado" widget="badge" optional="hide"/>
                     </tree>
                 </field>
 
+                <!-- Mensajes informativos -->
                 <div class="alert alert-info" role="alert" invisible="purchase_order_id">
-                    <i class="fa fa-info-circle"/> Se creará una nueva cotización con el proveedor seleccionado.
+                    <i class="fa fa-info-circle"/> Se creará una nueva cotización con los datos indicados.
                 </div>
                 <div class="alert alert-success" role="alert" invisible="not purchase_order_id">
                     <i class="fa fa-check-circle"/> Se agregarán las líneas a la cotización existente.

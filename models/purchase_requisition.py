@@ -1,16 +1,41 @@
 from odoo import models, api, fields, _
 
+
 class PurchaseRequisitionExt(models.Model):
     _inherit = 'employee.purchase.requisition'
 
     purchase_request_count = fields.Integer(
-        string='Solicitudes de insumos',
+        string='Líneas de solicitud',
         compute='_compute_purchase_request_count',
-        help='Número de solicitudes de insumos vinculadas a esta requisición'
+        help='Número de líneas de solicitud de insumos vinculadas a esta requisición'
     )
 
-    def action_open_requi_purchase_request_wizard(self):
+    def _compute_purchase_request_count(self):
+        for req in self:
+            # Obtener todas las líneas de requisición de esta requisición
+            req_line_ids = req.requisition_order_ids.ids
+            # Contar líneas de solicitud que tengan requisition_product_id en esas líneas
+            count = self.env['purchase.request.line'].search_count([
+                ('requisition_product_id', 'in', req_line_ids)
+            ])
+            req.purchase_request_count = count
+
+    def action_open_purchase_requests(self):
+        """Abre la lista de líneas de solicitud de insumos vinculadas a esta requisición"""
         self.ensure_one()
+        # Obtener las líneas de requisición
+        req_line_ids = self.requisition_order_ids.ids
+        action = self.env['ir.actions.actions']._for_xml_id(
+            'purchase_addons.purchase_request_line_form_action'
+        )
+        action['domain'] = [('requisition_product_id', 'in', req_line_ids)]
+        action['context'] = {}
+        return action
+
+    def action_open_requi_purchase_request_wizard(self):
+        """Abre el wizard para agregar líneas de requisición a solicitudes de insumos"""
+        self.ensure_one()
+        # El wizard ahora no necesita purchase_request_id, solo crea líneas directamente
         wizard = self.env['requi.purchase.request.wizard'].create({
             'requisition_id': self.id,
             'line_ids': [
@@ -19,7 +44,7 @@ class PurchaseRequisitionExt(models.Model):
                     'selected': False,
                     'product_id': line.product_id.id,
                     'requisition_qty': line.quantity,
-                    'product_qty': line.quantity,  # cantidad por defecto
+                    'product_qty': line.quantity,
                     'uom_id': line.product_id.uom_id.id,
                     'note': line.note or '',
                     'analytic_distribution': line.analytic_distribution,
@@ -37,19 +62,3 @@ class PurchaseRequisitionExt(models.Model):
             'view_mode': 'form',
             'target': 'new',
         }
-
-    def _compute_purchase_request_count(self):
-        for req in self:
-            req.purchase_request_count = self.env['purchase.request'].search_count(
-                [('requisition_ids', 'in', req.id)]
-            )
-
-    def action_open_purchase_requests(self):
-        """Abre la lista de solicitudes de insumos vinculadas a esta requisición"""
-        self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id(
-            'purchase_addons.action_purchase_request_form'
-        )
-        action['domain'] = [('requisition_ids', 'in', self.id)]
-        action['context'] = {}
-        return action

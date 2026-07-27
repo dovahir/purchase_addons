@@ -8,6 +8,35 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
     _name = 'purchase.request.add.to.rfq.wizard'
     _description = 'Agregar líneas de solicitud a RFQ existente o nueva'
 
+    # Campos de cabecera para la nueva RFQ (se piden al usuario)
+    purchaser_id = fields.Many2one(
+        comodel_name='res.users',
+        string='Comprador',
+        required=True,
+        default=lambda self: self.env.user,
+        help='Comprador asignado a la nueva cotización'
+    )
+    picking_type_id = fields.Many2one(
+        comodel_name='stock.picking.type',
+        string='Entregar en',
+        required=True,
+        default=lambda self: self._default_picking_type(),
+        help='Tipo de entrega para la nueva cotización'
+    )
+    company_id = fields.Many2one(
+        comodel_name='res.company',
+        string='Compañía',
+        required=True,
+        default=lambda self: self.env.company,
+        help='Compañía para la nueva cotización'
+    )
+    group_id = fields.Many2one(
+        comodel_name='procurement.group',
+        string='Grupo de aprovisionamiento',
+        help='Opcional: grupo de aprovisionamiento para la nueva cotización'
+    )
+
+    # Campos existentes
     purchase_order_id = fields.Many2one(
         comodel_name='purchase.order',
         string='Cotización existente',
@@ -17,15 +46,27 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
     supplier_id = fields.Many2one(
         comodel_name='res.partner',
         string='Proveedor',
-        # required=True,
-        # domain="[('supplier_rank', '>', 0)]",
-        help='Proveedor para la nueva cotización (obligatorio)',
+        required=True,
+        help='Proveedor para la nueva cotización',
     )
     line_ids = fields.One2many(
         comodel_name='purchase.request.add.to.rfq.wizard.line',
         inverse_name='wizard_id',
         string='Líneas de solicitud',
     )
+
+    @api.model
+    def _default_picking_type(self):
+        """Obtiene el tipo de entrega por defecto de la compañía."""
+        company_id = self.env.company.id
+        types = self.env['stock.picking.type'].search(
+            [('code', '=', 'incoming'), ('warehouse_id.company_id', '=', company_id)]
+        )
+        if not types:
+            types = self.env['stock.picking.type'].search(
+                [('code', '=', 'incoming'), ('warehouse_id', '=', False)]
+            )
+        return types[:1]
 
     def add_to_rfq(self):
         """Agrega las líneas seleccionadas a una RFQ existente o crea una nueva."""
@@ -48,15 +89,16 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
                     % line.product_id.display_name
                 )
             # Validar que no supere la cantidad pendiente por comprar
-            if hasattr(line.request_line_id, 'pending_qty_to_buy') and line.product_qty > line.request_line_id.pending_qty_to_buy:
+            request_line = line.request_line_id
+            if hasattr(request_line, 'pending_qty_to_buy') and line.product_qty > request_line.pending_qty_to_buy:
                 raise UserError(
                     _('La cantidad solicitada para %s (%.2f) excede la cantidad pendiente por comprar (%.2f).')
-                    % (line.product_id.display_name, line.product_qty, line.request_line_id.pending_qty_to_buy)
+                    % (line.product_id.display_name, line.product_qty, request_line.pending_qty_to_buy)
                 )
 
         # Crear la PO si no se seleccionó una existente
         if not order:
-            order = self._create_purchase_order(supplier, selected_lines)
+            order = self._create_purchase_order(selected_lines)
 
         added_lines = []
         skipped_lines = []
@@ -66,27 +108,17 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         for wizard_line in selected_lines:
             request_line = wizard_line.request_line_id
 
-            # Verificar duplicados según el origen de la línea
-            if request_line.is_replenishment:
-                # Para reabastecimiento: validar por producto (puede haber varias líneas de distintas solicitudes)
-                existing = order.order_line.filtered(
-                    lambda ol: ol.product_id == request_line.product_id
-                    and request_line.id in ol.purchase_request_lines.ids
-                )
-            else:
-                # Para líneas de requisición: validar por producto y línea de requisición origen
-                existing = order.order_line.filtered(
-                    lambda ol: ol.product_id == request_line.product_id
-                               and request_line.id in ol.purchase_request_lines.ids
-                )
-
+            # Verificar duplicados: si la línea de solicitud ya está vinculada a alguna línea de compra en la orden
+            existing = order.order_line.filtered(
+                lambda ol: request_line.id in ol.purchase_request_lines.ids
+            )
             if existing:
+                # Si ya existe, sumar la cantidad a la línea existente
                 existing_line = existing[0]
                 new_qty = existing_line.product_qty + wizard_line.product_qty
                 existing_line.write({
                     'product_qty': new_qty,
                     'purchase_request_lines': [fields.Command.link(request_line.id)]
-                    # Agregar la nueva línea de solicitud
                 })
                 # Crear una nueva asignación para la nueva cantidad
                 allocation_vals = {
@@ -105,19 +137,18 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             po_line = self.env['purchase.order.line'].create(po_line_vals)
             added_lines.append(po_line)
 
-            # Vincular la línea de solicitud con la línea de PO usando fields.Command.link
+            # Vincular la línea de solicitud con la línea de PO
             po_line.write({'purchase_request_lines': [fields.Command.link(request_line.id)]})
 
-            # --- CREAR ASIGNACIÓN ---
+            # Crear asignación
             allocation_vals = {
                 'purchase_request_line_id': request_line.id,
                 'purchase_line_id': po_line.id,
                 'requested_product_uom_qty': wizard_line.product_qty,
                 'product_uom_id': request_line.product_uom_id.id,
-                'allocated_product_qty': 0.0,  # inicialmente cero, se actualizará con recepciones
+                'allocated_product_qty': 0.0,
             }
             self.env['purchase.request.allocation'].create(allocation_vals)
-            # ------------------------
 
             lines_to_in_progress |= request_line
 
@@ -125,66 +156,17 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         if lines_to_in_progress:
             lines_to_in_progress.write({'line_state': 'in_progress'})
 
-        # # Mensaje en el chatter de la solicitud
-        # for req in selected_lines.mapped('request_line_id.request_id'):
-        #     req.message_post(
-        #         body=_('Se agregaron %d líneas a la cotización %s.')
-        #         % (len(selected_lines.filtered(lambda l: l.request_line_id.request_id == req)), order.name)
-        #     )
-        #
-        # # Mensaje en el chatter de la PO
-        # if added_lines:
-        #     order.message_post(
-        #         body=_('Se agregaron %d líneas desde solicitudes de insumos.')
-        #         % len(added_lines)
-        #     )
-        #
-        # # Construir mensaje de notificación
-        # message = _('Se agregaron %d líneas a la cotización %s.') % (
-        #     len(added_lines),
-        #     order.name
-        # )
-        #
-        # if skipped_lines:
-        #     skipped_names = ', '.join([
-        #         l.product_id.display_name or 'Producto sin nombre'
-        #         for l in skipped_lines
-        #         if l.product_id and l.product_id.display_name
-        #     ])
-        #     if skipped_names:
-        #         message += _('\n\nLíneas omitidas por ya existir en la cotización:\n%s') % skipped_names
-        #
-        # # Retornar notificación y abrir la PO
-        # return {
-        #     'type': 'ir.actions.client',
-        #     'tag': 'display_notification',
-        #     'params': {
-        #         'title': _('Proceso Completado'),
-        #         'message': message,
-        #         'type': 'warning' if skipped_lines else 'success',
-        #         'sticky': True if skipped_lines else False,
-        #         'next': {
-        #             'type': 'ir.actions.act_window',
-        #             'res_model': 'purchase.order',
-        #             'res_id': order.id,
-        #             'view_mode': 'form',
-        #             'target': 'current',
-        #         },
-        #     }
-        # }
-
-        # Mensaje en el chatter de la solicitud
-        for req in selected_lines.mapped('request_line_id.request_id'):
-            req.message_post(
-                body=_('Se agregaron %d líneas a la cotización %s.')
-                     % (len(selected_lines.filtered(lambda l: l.request_line_id.request_id == req)), order.name)
+        # Mensaje en el chatter de cada línea de solicitud (ya que no hay cabecera)
+        for request_line in selected_lines.mapped('request_line_id'):
+            request_line.message_post(
+                body=_('Línea agregada a la cotización %s.') % order.name
             )
 
         # Mensaje en el chatter de la PO
         if added_lines:
             order.message_post(
                 body=_('Se agregaron %d líneas desde solicitudes de insumos.')
-                     % len(added_lines)
+                % len(added_lines)
             )
 
         # Retornar la acción para abrir la orden de compra
@@ -196,28 +178,26 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             'target': 'current',
         }
 
-    def _create_purchase_order(self, supplier, selected_lines):
-        """Crea una nueva orden de compra con el proveedor seleccionado."""
-        first_line = selected_lines[0].request_line_id
-        request = first_line.request_id
-
-        # origin = request.origin or request.name
-
+    def _create_purchase_order(self, selected_lines):
+        """Crea una nueva orden de compra con los campos del wizard."""
+        self.ensure_one()
+        # Tomar datos del wizard
         po_vals = {
-            'partner_id': supplier.id,
-            # 'origin': origin,
-            'company_id': request.company_id.id,
-            'picking_type_id': request.picking_type_id.id,
-            'currency_id': request.currency_id.id,
+            'partner_id': self.supplier_id.id,
+            'company_id': self.company_id.id,
+            'picking_type_id': self.picking_type_id.id,
             'date_order': fields.Date.today(),
-            'purchase_request_ids': [fields.Command.link(request.id)],
+            'user_id': self.purchaser_id.id,
+            'currency_id': self.company_id.currency_id.id,
         }
+        if self.group_id:
+            po_vals['group_id'] = self.group_id.id
+
         order = self.env['purchase.order'].create(po_vals)
         return order
 
     def _prepare_purchase_order_line(self, order, wizard_line):
         """Prepara los valores para crear una línea de PO desde una línea del wizard."""
-        # Usar sudo() para evitar problemas de permisos al leer project_id/task_id
         request_line = wizard_line.request_line_id.sudo()
         product = request_line.product_id
         uom = product.uom_po_id or product.uom_id
@@ -237,16 +217,49 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             'task_id': request_line.task_id.id if request_line.task_id else False,
             'analytic_distribution': request_line.analytic_distribution,
             'priority': request_line.priority,
-            'note': request_line.note if request_line else False,
-            'req_ids': [fields.Command.link(
-                request_line.requisition_product_id.requisition_product_id.id)] if request_line.requisition_product_id else False,
+            'note': request_line.note or '',
+            # Ya no existe 'req_ids' porque la cabecera de solicitud se elimina
+            # Pero si la línea tiene origen en requisición, podemos vincular la requisición
+            # a través de un campo que tengamos en la línea de compra (req_ids)
+            # Como no tenemos cabecera, dejamos req_ids vacío o lo vinculamos a la requisición si existe.
+            'req_ids': [(6, 0, [])],  # Vacío por defecto
         }
+        # Si la línea viene de una requisición, vinculamos la requisición
+        if request_line.requisition_product_id:
+            # requisition_product_id es la línea de requisición, su padre es la cabecera
+            requisition = request_line.requisition_product_id.requisition_product_id
+            if requisition:
+                vals['req_ids'] = [(6, 0, [requisition.id])]
+
         return vals
 
     @api.model
     def default_get(self, fields_list):
-        """Precarga las líneas de la solicitud activa. En test"""
         defaults = super().default_get(fields_list)
+        active_model = self.env.context.get('active_model')
+        active_ids = self.env.context.get('active_ids', [])
+
+        if active_model == 'purchase.request.line' and active_ids:
+            lines = self.env['purchase.request.line'].browse(active_ids)
+            # Filtrar líneas que no estén canceladas ni compradas
+            valid_lines = lines.filtered(
+                lambda l: l.line_state not in ('cancel', 'purchased')
+            )
+            if valid_lines and 'line_ids' in fields_list:
+                line_vals = []
+                for line in valid_lines:
+                    # Calcular cantidad pendiente por comprar
+                    qty = line.pending_qty_to_buy or line.product_qty
+                    if qty <= 0:
+                        qty = line.product_qty  # Si no hay pendiente, usar la cantidad original
+                    line_vals.append(fields.Command.create({
+                        'request_line_id': line.id,
+                        'selected': True,
+                        'product_id': line.product_id.id,
+                        'product_qty': qty,
+                        'uom_id': line.product_uom_id.id,
+                    }))
+                defaults['line_ids'] = line_vals
 
         return defaults
 
@@ -260,12 +273,12 @@ class PurchaseRequestAddToRfqWizardLine(models.TransientModel):
         required=True,
         ondelete='cascade',
     )
-    request_id = fields.Many2one(
-        comodel_name='purchase.request',
-        related='request_line_id.request_id',
-        string='Solicitud',
-        readonly=True,
-    )
+    # request_id = fields.Many2one(
+    #     comodel_name='purchase.request',
+    #     related='request_line_id.request_id',
+    #     string='Solicitud',
+    #     readonly=True,
+    # )
     line_state = fields.Selection(
         related='request_line_id.line_state',
         string='Estado',

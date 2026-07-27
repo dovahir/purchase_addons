@@ -8,17 +8,17 @@ class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
     # ===== Nuevos campos =====
-    purchase_request_ids = fields.Many2many(
-        comodel_name='purchase.request',
-        relation='purchase_order_purchase_request_rel',
-        column1='purchase_order_id',
-        column2='purchase_request_id',
-        string='Solicitudes de insumos',
-        readonly=True,
-        copy=False,
-        help='Solicitudes de insumos vinculadas a esta orden de compra',
-        tracking=False,
-    )
+    # purchase_request_ids = fields.Many2many(
+    #     comodel_name='purchase.request',
+    #     relation='purchase_order_purchase_request_rel',
+    #     column1='purchase_order_id',
+    #     column2='purchase_request_id',
+    #     string='Solicitudes de insumos',
+    #     readonly=True,
+    #     copy=False,
+    #     help='Solicitudes de insumos vinculadas a esta orden de compra',
+    #     tracking=False,
+    # )
     purchase_request_line_ids = fields.Many2many(
         comodel_name='purchase.request.line',
         relation='purchase_order_purchase_request_line_rel',
@@ -30,29 +30,42 @@ class PurchaseOrder(models.Model):
         help='Líneas de solicitud de insumos vinculadas a esta orden de compra',
         tracking=False,
     )
-
-    purchase_request_count = fields.Integer(
-        compute='_compute_purchase_request_count',
-        string='Solicitudes'
+    purchase_request_line_count = fields.Integer(
+        compute='_compute_purchase_request_line_count',
+        string='Líneas origen'
     )
 
-    def _compute_purchase_request_count(self):
+    def _compute_purchase_request_line_count(self):
         for order in self:
-            order.purchase_request_count = len(order.purchase_request_ids)
+            order.purchase_request_line_count = len(order.purchase_request_line_ids)
+
+    # purchase_request_count = fields.Integer(
+    #     compute='_compute_purchase_request_count',
+    #     string='Solicitudes'
+    # )
+
+    # def _compute_purchase_request_count(self):
+    #     for order in self:
+    #         order.purchase_request_count = len(order.purchase_request_ids)
 
     # ===== Smart button =====
-    def action_open_purchase_requests(self):
+    # def action_open_purchase_requests(self):
+    #     self.ensure_one()
+    #     action = self.env['ir.actions.actions']._for_xml_id(
+    #         'purchase_addons.action_purchase_request_form'
+    #     )
+    #     requests = self.mapped('purchase_request_ids')
+    #     if len(requests) > 1:
+    #         action['domain'] = [('id', 'in', requests.ids)]
+    #     elif requests:
+    #         action['views'] = [(self.env.ref('purchase_addons.purchase_request_form').id, 'form')]
+    #         action['view_mode'] = 'form'
+    #         action['res_id'] = requests.id
+    #     return action
+    def action_open_purchase_request_lines(self):
         self.ensure_one()
-        action = self.env['ir.actions.actions']._for_xml_id(
-            'purchase_addons.action_purchase_request_form'
-        )
-        requests = self.mapped('purchase_request_ids')
-        if len(requests) > 1:
-            action['domain'] = [('id', 'in', requests.ids)]
-        elif requests:
-            action['views'] = [(self.env.ref('purchase_addons.purchase_request_form').id, 'form')]
-            action['view_mode'] = 'form'
-            action['res_id'] = requests.id
+        action = self.env['ir.actions.actions']._for_xml_id('purchase_addons.purchase_request_line_form_action')
+        action['domain'] = [('id', 'in', self.purchase_request_line_ids.ids)]
         return action
 
     # ===== Sobrescritura de métodos =====
@@ -75,13 +88,11 @@ class PurchaseOrder(models.Model):
                 )
                 if to_update:
                     to_update.write({'line_state': 'to_receive'})
-                    # Agrupar por solicitud para mensajes claros
-                    for req in to_update.mapped('request_id'):
-                        lines_for_req = to_update.filtered(lambda l: l.request_id == req)
-                        names = [l.name or l.product_id.display_name for l in lines_for_req]
-                        req.message_post(
-                            body=_('La PO %s ha sido confirmada. Los productos %s están pendientes de recepción.')
-                            % (order.name, ', '.join(names))
+                    # Publicar mensaje en cada línea afectada
+                    for line in to_update:
+                        line.message_post(
+                            body=_('La orden de compra %s ha sido confirmada. La línea está pendiente de recepción.')
+                                 % order.name
                         )
         return res
 
@@ -97,22 +108,21 @@ class PurchaseOrder(models.Model):
                 if to_update:
                     for line in to_update:
                         line._update_state_from_purchase_lines()
-                    for req in to_update.mapped('request_id'):
-                        req.message_post(
-                            body=_('La RFQ %s ha sido cancelada. Se ha actualizado el estado de las líneas relacionadas.')
-                            % order.name
+                    # Publicar mensaje en cada línea
+                    for line in to_update:
+                        line.message_post(
+                            body=_('La orden de compra %s ha sido cancelada. Se ha actualizado el estado de la línea.')
+                                 % order.name
                         )
         return res
 
     def unlink(self):
         """Al eliminar la orden, desvincular las líneas de solicitud y actualizar su estado."""
         for order in self:
-            # Obtener todas las líneas de compra que se van a eliminar
             po_lines = order.order_line
             for po_line in po_lines:
                 request_lines = po_line.purchase_request_lines
                 if request_lines:
-                    # Desvincular esta línea de compra de cada línea de solicitud usando Command.unlink
                     for req_line in request_lines:
                         # Remover la relación con esta línea de compra
                         req_line.purchase_lines = [fields.Command.unlink(po_line.id)]

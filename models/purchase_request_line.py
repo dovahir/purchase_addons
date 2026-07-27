@@ -57,20 +57,20 @@ class PurchaseRequestLine(models.Model):
         tracking=True,
         digits='Product Unit of Measure',
     )
-    request_id = fields.Many2one(
-        comodel_name='purchase.request',
-        string='Solicitud',
-        ondelete='cascade',
-        readonly=True,
-        index=True,
-        auto_join=True,
-    )
-    company_id = fields.Many2one(
-        comodel_name='res.company',
-        related='request_id.company_id',
-        string='Compañía',
-        store=True,
-    )
+    # request_id = fields.Many2one(
+    #     comodel_name='purchase.request',
+    #     string='Solicitud',
+    #     ondelete='cascade',
+    #     readonly=True,
+    #     index=True,
+    #     auto_join=True,
+    # )
+    # company_id = fields.Many2one(
+    #     comodel_name='res.company',
+    #     related='request_id.company_id',
+    #     string='Compañía',
+    #     store=True,
+    # )
     date_required = fields.Date(
         string='Fecha requerida',
         required=True,
@@ -348,8 +348,8 @@ class PurchaseRequestLine(models.Model):
                     rec.line_state = 'in_progress'
 
             # Si la línea queda en 'purchased', verificar si la solicitud debe marcarse como 'done'
-            if rec.line_state == 'purchased':
-                rec.request_id._check_all_lines_purchased()
+            # if rec.line_state == 'purchased':
+            #     rec.request_id._check_all_lines_purchased()
 
     # def _cancel_line(self):
     #     """
@@ -467,16 +467,16 @@ class PurchaseRequestLine(models.Model):
                 self.message_post(body=_('La RFQ %s ha sido cancelada porque quedó vacía.') % po.name)
 
     # =========================== Acciones de smart buttons ===========================
-    def action_open_request(self):
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Solicitud'),
-            'res_model': 'purchase.request',
-            'res_id': self.request_id.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
+    # def action_open_request(self):
+    #     self.ensure_one()
+    #     return {
+    #         'type': 'ir.actions.act_window',
+    #         'name': _('Solicitud'),
+    #         'res_model': 'purchase.request',
+    #         'res_id': self.request_id.id,
+    #         'view_mode': 'form',
+    #         'target': 'current',
+    #     }
 
     def action_open_purchase_orders(self):
         self.ensure_one()
@@ -504,13 +504,13 @@ class PurchaseRequestLine(models.Model):
         return action
 
     # =========================== CRUD y validaciones ===========================
-    def write(self, vals):
-        res = super().write(vals)
-        if 'line_state' in vals:
-            for rec in self:
-                if rec.line_state == 'purchased':
-                    rec.request_id._check_all_lines_purchased()
-        return res
+    # def write(self, vals):
+    #     res = super().write(vals)
+    #     if 'line_state' in vals:
+    #         for rec in self:
+    #             if rec.line_state == 'purchased':
+    #                 rec.request_id._check_all_lines_purchased()
+    #     return res
 
     def unlink(self):
         for rec in self:
@@ -523,12 +523,23 @@ class PurchaseRequestLine(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         lines = super().create(vals_list)
-        for line in lines:
-            if line.request_id.state == 'draft':
-                line.request_id.message_post(
-                    body=_('Producto %s agregado.') % (line.name or line.product_id.display_name),
-                )
+        # for line in lines:
+        #     if line.request_id.state == 'draft':
+        #         line.request_id.message_post(
+        #             body=_('Producto %s agregado.') % (line.name or line.product_id.display_name),
+        #         )
         return lines
+
+    def action_open_add_to_rfq_wizard(self):
+        """
+        Abre el wizard de agregar a RFQ con las líneas seleccionadas.
+        """
+        action = self.env['ir.actions.actions']._for_xml_id('purchase_addons.action_purchase_request_add_to_rfq')
+        action['context'] = {
+            'active_model': 'purchase.request.line',
+            'active_ids': self.ids,
+        }
+        return action
 
     def action_open_send_email_wizard(self):
         """Abre el wizard de envío de correo desde el tree de líneas."""
