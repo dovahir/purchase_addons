@@ -78,9 +78,13 @@ class PurchaseOrder(models.Model):
         return res
 
     def button_confirm(self):
-        """Al confirmar la orden, actualizar el estado de las líneas de solicitud vinculadas."""
+        """Al confirmar la orden:
+        - Actualizar líneas de solicitud a 'to_receive'.
+        - Para servicios, marcar asignaciones como completadas (no hay recepción física).
+        """
         res = super().button_confirm()
         for order in self:
+            # 1. Actualizar líneas de solicitud (productos stock)
             request_lines = order.mapped('order_line.purchase_request_lines')
             if request_lines:
                 to_update = request_lines.filtered(
@@ -88,12 +92,27 @@ class PurchaseOrder(models.Model):
                 )
                 if to_update:
                     to_update.write({'line_state': 'to_receive'})
-                    # Publicar mensaje en cada línea afectada
                     for line in to_update:
                         line.message_post(
                             body=_('La orden de compra %s ha sido confirmada. La línea está pendiente de recepción.')
                                  % order.name
                         )
+
+            # 2. Manejar servicios (no generan recepciones)
+            service_lines = order.order_line.filtered(lambda l: l.product_id.type == 'service')
+            for po_line in service_lines:
+                for allocation in po_line.purchase_request_allocation_ids:
+                    # Si la asignación aún no está completada, marcarla como completada
+                    if allocation.allocated_product_qty < allocation.requested_product_uom_qty:
+                        qty_to_add = allocation.requested_product_uom_qty - allocation.allocated_product_qty
+                        allocation.write({
+                            'allocated_product_qty': allocation.requested_product_uom_qty
+                        })
+                        allocation._notify_allocation(qty_to_add)
+                # Recalcular estado de las líneas de solicitud afectadas
+                for req_line in po_line.purchase_request_lines:
+                    req_line._update_state_from_purchase_lines()
+
         return res
 
     def button_cancel(self):
@@ -228,12 +247,28 @@ class PurchaseOrderLine(models.Model):
         return res
 
     def unlink(self):
-        """Al eliminar una línea de compra, desvincular de las solicitudes y actualizar estado."""
+        """Al eliminar una línea de compra:
+        - Sumar cantidad no recibida a qty_cancelled en la línea de solicitud.
+        - Desvincular y actualizar estado.
+        """
         for line in self:
+            # Procesar asignaciones antes de eliminar la línea
+            for alloc in line.purchase_request_allocation_ids:
+                req_line = alloc.purchase_request_line_id
+                # Cantidad no recibida en esta asignación
+                pending_qty = alloc.requested_product_uom_qty - alloc.allocated_product_qty
+                if pending_qty > 0.0:
+                    req_line.qty_cancelled += pending_qty
+                    req_line.message_post(
+                        body=_('Cantidad cancelada por eliminación de línea de compra: %.2f %s.')
+                             % (pending_qty, alloc.product_uom_id.name)
+                    )
+                # Si la asignación ya está completamente recibida, no se cancela nada
+            # Desvincular líneas de solicitud
             request_lines = line.purchase_request_lines
             if request_lines:
                 for req_line in request_lines:
-                    # Remover la relación con esta línea de compra usando Command.unlink
+                    # Remover la relación con esta línea de compra
                     req_line.purchase_lines = [fields.Command.unlink(line.id)]
                     req_line._update_state_from_purchase_lines()
         return super().unlink()

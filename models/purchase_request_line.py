@@ -29,7 +29,7 @@ class PurchaseRequestLine(models.Model):
     _name = 'purchase.request.line'
     _description = 'Línea de Solicitud de Insumos'
     _inherit = ['mail.thread', 'mail.activity.mixin', 'analytic.mixin']
-    _order = 'id desc'
+    _order = 'create_date desc'
     _rec_name = 'product_id'
 
     # =========================== Campos ===========================
@@ -139,7 +139,7 @@ class PurchaseRequestLine(models.Model):
         tracking=True,
     )
     is_replenishment = fields.Boolean(
-        string='Proviene de reabastecimiento',
+        string='Es reabastecimiento',
         default=False,
         help='Indica si la línea fue creada desde el módulo de reabastecimiento',
     )
@@ -250,31 +250,17 @@ class PurchaseRequestLine(models.Model):
             else:
                 rec.purchase_state = states[0] if states else False
 
-    @api.depends('purchase_request_allocation_ids.allocated_product_qty',
-                 'purchase_request_allocation_ids.open_product_qty')
+    @api.depends(
+        'purchase_request_allocation_ids.allocated_product_qty',
+        'purchase_request_allocation_ids.open_product_qty',
+        'purchase_request_allocation_ids.purchase_state',  # Aseguramos recálculo al cambiar estado de PO
+    )
     def _compute_qty(self):
         for rec in self:
             qty_done = sum(rec.purchase_request_allocation_ids.mapped('allocated_product_qty'))
             qty_open = sum(rec.purchase_request_allocation_ids.mapped('open_product_qty'))
             rec.qty_done = qty_done
             rec.qty_in_progress = qty_open
-
-    # @api.depends('purchase_request_allocation_ids.stock_move_id.state',
-    #              'purchase_request_allocation_ids.purchase_line_id.order_id.state')
-    # def _compute_qty_cancelled(self):
-    #     for rec in self:
-    #         if rec.product_id.type != 'service':
-    #             cancelled_moves = rec.purchase_request_allocation_ids.mapped('stock_move_id').filtered(
-    #                 lambda sm: sm.state == 'cancel'
-    #             )
-    #             qty_cancelled = sum(cancelled_moves.mapped('product_qty'))
-    #         else:
-    #             cancelled_po_lines = rec.purchase_request_allocation_ids.mapped('purchase_line_id').filtered(
-    #                 lambda pl: pl.state == 'cancel'
-    #             )
-    #             qty_cancelled = sum(cancelled_po_lines.mapped('product_qty'))
-    #             qty_cancelled -= rec.qty_done
-    #         rec.qty_cancelled = max(0.0, qty_cancelled)
 
     @api.depends('product_qty', 'qty_done', 'qty_in_progress', 'qty_cancelled')
     def _compute_pending_qty(self):
@@ -303,7 +289,8 @@ class PurchaseRequestLine(models.Model):
         Actualiza el estado de la línea basándose en:
         - PO confirmadas (purchase/done) → se consideran firmes.
         - RFQ en draft/sent → solo cuentan si tienen cantidad > 0.
-        - Cantidades recibidas.
+        - Cantidades recibidas (qty_done).
+        - Para servicios: si todas las PO están en done, se considera completado.
         """
         for rec in self:
             if rec.line_state == 'cancel':
@@ -339,18 +326,16 @@ class PurchaseRequestLine(models.Model):
                     po_line.product_uom._compute_quantity(po_line.product_qty, rec.product_uom_id)
                     for po_line in confirmed_lines
                 )
+
                 # Si la cantidad confirmada ya cubre la solicitud
                 if confirmed_qty >= rec.product_qty:
                     # Ya se compró todo (o más)
                     rec.line_state = 'purchased' if rec.qty_done >= rec.product_qty else 'to_receive'
                 else:
                     # La cantidad confirmada es menor a la solicitada
-                    # El resto (si hay draft_lines) se cancela
-                    if draft_lines:
-                        # Las RFQ draft/sent se pueden cancelar (ya lo hizo _cancel_in_progress)
-                        rec.line_state = 'partially_purchased' if rec.qty_done > 0 else 'in_progress'
-                    else:
-                        rec.line_state = 'partially_purchased' if rec.qty_done > 0 else 'in_progress'
+                    # El resto (si hay draft_lines) se cancela o se queda pendiente
+                    rec.line_state = 'partially_purchased' if rec.qty_done > 0 else 'in_progress'
+
                 # Si hay cantidad recibida, ajustar estado
                 if rec.qty_done >= rec.product_qty:
                     rec.line_state = 'purchased'
@@ -363,40 +348,69 @@ class PurchaseRequestLine(models.Model):
                 else:
                     rec.line_state = 'in_progress'
 
-            # Si la línea queda en 'purchased', verificar si la solicitud debe marcarse como 'done'
-            # if rec.line_state == 'purchased':
-            #     rec.request_id._check_all_lines_purchased()
+            # Caso especial: servicios
+            if rec.product_id.type == 'service':
+                # Si todas las líneas de compra están en 'done', consideramos completado
+                if all(po_line.order_id.state == 'done' for po_line in active_po_lines):
+                    rec.line_state = 'purchased'
+                    # Si por algún motivo qty_done no está actualizado, forzarlo
+                    if rec.qty_done < rec.product_qty:
+                        # Sumar la cantidad de las PO en done a qty_done
+                        for po_line in active_po_lines.filtered(lambda l: l.order_id.state == 'done'):
+                            # Buscar asignación y forzar allocated
+                            for alloc in po_line.purchase_request_allocation_ids:
+                                if alloc.allocated_product_qty < alloc.requested_product_uom_qty:
+                                    alloc.write({
+                                        'allocated_product_qty': alloc.requested_product_uom_qty
+                                    })
+                                    alloc._notify_allocation(
+                                        alloc.requested_product_uom_qty - alloc.allocated_product_qty
+                                    )
+                        # Recalcular qty_done después de forzar
+                        rec._compute_qty()
 
-    # def _cancel_line(self):
-    #     """
-    #     Lógica de cancelación de una línea individual.
-    #     """
-    #     self.ensure_one()
-    #     if self.line_state in ('cancel', 'purchased', 'partially_purchased'):
-    #         return
-    #
-    #     if not self.purchase_lines:
-    #         self.line_state = 'cancel'
-    #         self.message_post(body=_('Línea cancelada manualmente.'))
-    #         return
-    #
-    #     for po_line in self.purchase_lines:
-    #         po = po_line.order_id
-    #         other_lines = po.order_line.filtered(lambda l: l.id != po_line.id)
-    #         other_request_lines = other_lines.mapped('purchase_request_lines')
-    #         related_to_this_request = self.request_id in other_request_lines.mapped('request_id')
-    #         if not other_lines or all(related_to_this_request for _ in other_lines):
-    #             po.button_cancel()
-    #             self.message_post(body=_('La orden de compra %s ha sido cancelada.') % po.name)
-    #         else:
-    #             if po_line.product_qty > 0:
-    #                 po_line.product_qty = 0.0
-    #                 po.message_post(body=_(
-    #                     'La línea de solicitud %s ha sido cancelada, por lo que su cantidad se ha reducido a 0.'
-    #                 ) % self.display_name)
-    #                 self.message_post(body=_('Cantidad reducida a 0 en la orden %s.') % po.name)
-    #
-    #     self._update_state_from_purchase_lines()
+    def action_cancel_multiple(self):
+        """Cancela todas las líneas seleccionadas."""
+        if not self:
+            raise UserError(_('No hay líneas seleccionadas.'))
+
+        cancelled = 0
+        errors = []
+        for line in self:
+            try:
+                # action_cancel_line ya valida cancel/purchased y todo lo demás
+                line.action_cancel_line()
+                cancelled += 1
+            except UserError as e:
+                errors.append(_('Línea %s: %s') % (line.display_name, str(e)))
+
+        # Construir mensaje final
+        if errors:
+            error_msg = _('Se cancelaron %d líneas.\n\nErrores:\n%s') % (cancelled, '\n'.join(errors))
+            if cancelled == 0:
+                raise UserError(error_msg)
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': _('Cancelación parcial'),
+                        'message': error_msg,
+                        'type': 'warning',
+                        'sticky': False,
+                    }
+                }
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Cancelación completada'),
+                    'message': _('Se cancelaron %d líneas correctamente.') % cancelled,
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
 
     def action_cancel_line(self):
         self.ensure_one()
