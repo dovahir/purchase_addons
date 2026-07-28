@@ -209,6 +209,11 @@ class PurchaseRequestLine(models.Model):
         readonly=True,
         copy=False,
     )
+    picking_count = fields.Integer(
+        string='Recepciones',
+        compute='_compute_picking_count',
+        help='Número de pickings asociados a esta línea de solicitud'
+    )
 
     @api.model
     def default_get(self, fields_list):
@@ -217,13 +222,12 @@ class PurchaseRequestLine(models.Model):
             defaults['requester_name'] = self.env.user.name
         return defaults
     # =========================== Computed ===========================
-    # @api.depends('product_id', 'product_id.seller_ids')
-    # def _compute_supplier_id(self):
-    #     for rec in self:
-    #         sellers = rec.product_id.seller_ids.filtered(
-    #             lambda si: not si.company_id or si.company_id == rec.company_id
-    #         )
-    #         rec.supplier_id = sellers[0].partner_id if sellers else False
+
+    def _compute_picking_count(self):
+        for line in self:
+            # Obtener pickings únicos de las asignaciones que tengan stock_move_id
+            pickings = line.purchase_request_allocation_ids.mapped('stock_move_id.picking_id').filtered(bool)
+            line.picking_count = len(pickings)
 
     @api.depends('purchase_lines.state', 'purchase_lines.order_id.state')
     def _compute_purchase_state(self):

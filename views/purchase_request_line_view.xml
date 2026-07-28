@@ -136,10 +136,10 @@
                         <button name="action_open_pickings" type="object"
                                 class="oe_stat_button"
                                 icon="fa-truck"
-                                invisible="not purchase_request_allocation_ids"
+                                invisible="picking_count == 0"
                                 groups="stock.group_stock_manager">
                             <div class="o_stat_info">
-                                <field name="purchase_request_allocation_ids" widget="statinfo" string="Recepciones"/>
+                                <field name="picking_count" widget="statinfo" string="Recepciones"/>
                             </div>
                         </button>
                     </div>
