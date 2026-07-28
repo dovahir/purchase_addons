@@ -74,8 +74,8 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
             'attachment_ids': [(4, attachment.id)],
             'author_id': self.env.user.partner_id.id,
         }
-        mail = self.env['mail.mail'].create(mail_values)
-        mail.send()
+        mail = self.env['mail.mail'].sudo().create(mail_values)
+        mail.sudo().send()
 
         # Registrar logs en cada línea y publicar en chatter
         for line in selected_lines:

@@ -25,8 +25,8 @@
                     <!-- Cotización existente (opcional) -->
                     <field name="purchase_order_id"
                            options="{'no_create': True}"
-                           placeholder="Deje vacio este campo para crear una RFQ nueva"
-                           domain="[('state', 'in', ['draft', 'sent']), ('partner_id', '=', supplier_id)]"/>
+                           placeholder="Deje vacío este campo para crear una RFQ nueva"
+                           domain="[('state', 'in', ['draft', 'sent'])]"/>
                 </group>
 
                 <!-- Campos para nueva RFQ (se ocultan si se selecciona una existente) -->

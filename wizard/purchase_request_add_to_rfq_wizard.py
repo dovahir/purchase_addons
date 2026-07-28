@@ -40,7 +40,6 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
     purchase_order_id = fields.Many2one(
         comodel_name='purchase.order',
         string='Cotización existente',
-        domain="[('state', 'in', ['draft', 'sent'])]",
         help='Opcional: seleccione una RFQ existente en estado Borrador o Cotización',
     )
     supplier_id = fields.Many2one(
@@ -107,6 +106,9 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         # Procesar cada línea seleccionada
         for wizard_line in selected_lines:
             request_line = wizard_line.request_line_id
+            # Obtener los IDs con sudo() pero sin crear el registro
+            project_id = request_line.sudo().project_id.id if request_line.sudo().project_id else False
+            task_id = request_line.sudo().task_id.id if request_line.sudo().task_id else False
 
             # Verificar duplicados: si la línea de solicitud ya está vinculada a alguna línea de compra en la orden
             existing = order.order_line.filtered(
@@ -133,8 +135,9 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
                 continue
 
             # Crear nueva línea de PO
-            po_line_vals = self._prepare_purchase_order_line(order, wizard_line)
-            po_line = self.env['purchase.order.line'].create(po_line_vals)
+            # Crear la línea de compra con sudo()
+            po_line_vals = self._prepare_purchase_order_line(order, wizard_line, project_id, task_id)
+            po_line = self.env['purchase.order.line'].sudo().create(po_line_vals)
             added_lines.append(po_line)
 
             # Vincular la línea de solicitud con la línea de PO
@@ -196,13 +199,11 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         order = self.env['purchase.order'].create(po_vals)
         return order
 
-    def _prepare_purchase_order_line(self, order, wizard_line):
-        """Prepara los valores para crear una línea de PO desde una línea del wizard."""
+    def _prepare_purchase_order_line(self, order, wizard_line, project_id=False, task_id=False):
         request_line = wizard_line.request_line_id.sudo()
         product = request_line.product_id
         uom = product.uom_po_id or product.uom_id
 
-        # Convertir cantidad a la UoM de la PO
         qty = wizard_line.product_qty
         if request_line.product_uom_id != uom:
             qty = request_line.product_uom_id._compute_quantity(qty, uom)
@@ -213,24 +214,17 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             'product_uom': uom.id,
             'product_qty': qty,
             'name': request_line.name or product.display_name,
-            'project_id': request_line.project_id.id if request_line.project_id else False,
-            'task_id': request_line.task_id.id if request_line.task_id else False,
+            'project_id': project_id,
+            'task_id': task_id,
             'analytic_distribution': request_line.analytic_distribution,
             'priority': request_line.priority,
             'note': request_line.note or '',
-            # Ya no existe 'req_ids' porque la cabecera de solicitud se elimina
-            # Pero si la línea tiene origen en requisición, podemos vincular la requisición
-            # a través de un campo que tengamos en la línea de compra (req_ids)
-            # Como no tenemos cabecera, dejamos req_ids vacío o lo vinculamos a la requisición si existe.
-            'req_ids': [(6, 0, [])],  # Vacío por defecto
+            'req_ids': [(6, 0, [])],
         }
-        # Si la línea viene de una requisición, vinculamos la requisición
         if request_line.requisition_product_id:
-            # requisition_product_id es la línea de requisición, su padre es la cabecera
             requisition = request_line.requisition_product_id.requisition_product_id
             if requisition:
                 vals['req_ids'] = [(6, 0, [requisition.id])]
-
         return vals
 
     @api.model

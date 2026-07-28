@@ -1,8 +1,8 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_purchase_request_line_user,purchase.request.line.user,model_purchase_request_line,purchase.group_purchase_user,1,1,1,1
+access_purchase_request_line_user,purchase.request.line.user,model_purchase_request_line,purchase.group_purchase_user,1,1,1,0
 access_purchase_request_allocation_user,purchase.request.allocation.user,model_purchase_request_allocation,purchase.group_purchase_user,1,0,0,0
-access_purchase_request_allocation_manager,purchase.request.allocation.manager,model_purchase_request_allocation,purchase.group_purchase_manager,1,1,1,1
-access_purchase_request_line_manager,purchase.request.line.manager,model_purchase_request_line,purchase.group_purchase_manager,1,1,1,1
+access_purchase_request_allocation_manager,purchase.request.allocation.manager,model_purchase_request_allocation,purchase.group_purchase_manager,1,1,1,0
+access_purchase_request_line_manager,purchase.request.line.manager,model_purchase_request_line,purchase.group_purchase_manager,1,1,1,0
 
 access_requi_purchase_request_wizard_user,requi.purchase.request.wizard.user,model_requi_purchase_request_wizard,purchase.group_purchase_user,1,1,1,0
 access_requi_purchase_request_wizard_line_user,requi.purchase.request.wizard.line.user,model_requi_purchase_request_wizard_line,purchase.group_purchase_user,1,1,1,0
@@ -28,3 +28,4 @@ access_requi_purchase_request_wizard_stock,requi.purchase.request.wizard.stock,m
 access_requi_purchase_request_wizard_line_stock,requi.purchase.request.wizard.line.stock,model_requi_purchase_request_wizard_line,stock.group_stock_user,1,1,1,0
 access_replenish_purchase_request_wizard_stock,replenish.purchase.request.wizard.stock,model_replenish_purchase_request_wizard,stock.group_stock_user,1,1,1,0
 access_replenish_purchase_request_wizard_line_stock,replenish.purchase.request.wizard.line.stock,model_replenish_purchase_request_wizard_line,stock.group_stock_user,1,1,1,0
+access_purchase_request_allocation_stock,purchase.request.allocation.stock,model_purchase_request_allocation,stock.group_stock_user,1,1,1,0

@@ -22,6 +22,7 @@
     'depends': [
         'purchase',
         'stock',
+        'project',
         'employee_purchase_requisition',
     ],
     'data': [
