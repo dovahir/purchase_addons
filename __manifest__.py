@@ -26,7 +26,7 @@
     ],
     'data': [
         # Seguridad
-        'security/purchase_request_security.xml',
+        # 'security/purchase_request_security.xml',
         'security/ir.model.access.csv',
 
         # Datos
