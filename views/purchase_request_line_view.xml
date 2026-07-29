@@ -8,11 +8,11 @@
         <field name="arch" type="xml">
             <tree name="Líneas de Solicitud" create="false">
                 <header>
-                    <button name="action_open_send_email_wizard"
-                            string="Enviar correo"
-                            type="object"
-                            icon="fa-envelope"
-                            class="btn-primary"/>
+<!--                    <button name="action_open_send_email_wizard"-->
+<!--                            string="Enviar correo"-->
+<!--                            type="object"-->
+<!--                            icon="fa-envelope"-->
+<!--                            class="btn-primary"/>-->
                     <button name="action_open_add_to_rfq_wizard"
                             string="Añadir a RFQ"
                             type="object"
@@ -26,8 +26,7 @@
                             confirm="¿Está seguro de cancelar las líneas seleccionadas? Esta acción puede afectar órdenes de compra asociadas."/>
                 </header>
                 <field name="product_uom_category_id" column_invisible="1"/>
-                <field name="priority" widget="badge" optional="show"
-                       decoration-warning="priority == 'urgent'"/>
+                <field name="priority" widget="priority" optional="show" nolabel="1"/>
                 <field name="product_id" string="Producto" options="{'no_create': True}" widget="many2one"/>
                 <field name="note"/>
                 <field name="product_qty" string="Cant. Solicitada"/>
@@ -48,6 +47,12 @@
                 <field name="create_date" string="Fecha solicitada" help="Fecha que se creó la línea"/>
                 <field name="date_required" string="Fecha requerida"/>
                 <field name="is_replenishment" string="Reabastecimiento" optional="hide" widget="boolean"/>
+                <field name="purchase_lines" column_invisible="1"/>
+                <button name="action_open_purchase_orders" string="Ver RFQs"
+                        type="object"
+                        title="Ver RFQs"
+                        class="btn-primary"
+                        invisible="not purchase_lines"/>
                 <field name="line_state" widget="badge"
                        decoration-muted="line_state == 'cancel'"
                        decoration-info="line_state in ('pending','email_sent','in_progress')"
@@ -79,10 +84,12 @@
                 <field name="project_id" string="Proyecto"/>
                 <field name="task_id" string="Tarea"/>
                 <field name="requisition_id" string="Requisición"/>
+                <field name="purchase_order_ids" string="Orden de compra"/>
                 <field name="analytic_distribution" groups="analytic.group_analytic_accounting"/>
 
                 <separator/>
-                <filter name="state_pending" string="Pendientes" domain="[('line_state','=','pending')]"/>
+                <filter name="all_pending" string="Pendientes" domain="[('line_state', 'not in', ['purchased', 'cancel'])]"/>
+<!--                <filter name="state_pending" string="Pendientes" domain="[('line_state','=','pending')]"/>-->
                 <filter name="state_email_sent" string="Cotización enviada" domain="[('line_state','=','email_sent')]"/>
                 <filter name="state_in_progress" string="En cotización" domain="[('line_state','=','in_progress')]"/>
                 <filter name="state_to_receive" string="Por recepcionar" domain="[('line_state','=','to_receive')]"/>
@@ -94,6 +101,8 @@
                 <filter name="all_bought" string="Totalmente comprados" domain="[('pending_qty_to_buy','=',0)]"/>
                 <filter name="open_qty" string="Con cantidad en proceso" domain="[('qty_in_progress','>',0)]"/>
                 <filter name="urgent" string="Urgentes" domain="[('priority','=','urgent')]"/>
+                <separator/>
+                <filter string="Archivado" name="archived" domain="[('active', '=', False)]"/>
 
                 <group expand="0" string="Agrupar por">
                     <filter name="group_product" string="Producto" context="{'group_by':'product_id'}"/>
@@ -116,6 +125,12 @@
         <field name="arch" type="xml">
             <form string="Línea de Solicitud" create="false" duplicate="false">
                 <header>
+                    <button name="action_open_add_to_rfq_wizard"
+                            string="Añadir a RFQ"
+                            type="object"
+                            class="btn-primary"
+                            icon="fa-shopping-cart"
+                            invisible="line_state in ('cancel', 'purchased')"/>
                     <button name="action_cancel_line"
                             type="object"
                             string="Cancelar línea"
@@ -123,11 +138,13 @@
                             invisible="line_state in ('cancel','purchased')"
                             confirm="¿Está seguro de cancelar esta línea? Esta acción puede afectar órdenes de compra asociadas."/>
                     <field name="line_state" widget="statusbar"
-                           statusbar_visible="pending,email_sent,in_progress,to_receive,partially_purchased,purchased,cancel"
+                           statusbar_visible="pending,email_sent,in_progress,to_receive,partially_purchased,purchased"
                            readonly="1"/>
                 </header>
 
                 <sheet>
+                    <widget name="web_ribbon" title="Archivado" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="active" invisible="1"/>
                     <!-- Smart buttons -->
                     <div class="oe_button_box" name="button_box">
                         <button name="action_open_purchase_orders" type="object"
@@ -162,7 +179,7 @@
                             <field name="create_date" string="Fecha solicitada"
                                    readonly="1" help="Fecha en que se solicitó comprar"/>
                             <field name="date_required" readonly="line_state != 'draft'"/>
-                            <field name="priority" widget="badge" readonly="line_state != 'draft'"/>
+                            <field name="priority" widget="priority" readonly="line_state in ('purchased', 'cancel')"/>
                             <field name="requester_name" readonly="1" string="Solicitado por" placeholder="Nombre de quien solicita"/>
                         </group>
                         <group name="quantities" string="">
@@ -215,7 +232,8 @@
                                 </tree>
                             </field>
                         </page>
-                        <page name="allocations" string="Asignaciones">
+
+                        <page name="allocations" string="Asignaciones" invisible="1">
                             <field name="purchase_request_allocation_ids" nolabel="1">
                                 <tree decoration-muted="purchase_state == 'cancel'">
                                     <field name="stock_move_id" string="Movimiento"/>
@@ -248,6 +266,7 @@
         <field name="res_model">purchase.request.line</field>
         <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="purchase_request_line_search"/>
+        <field name="context">{'search_default_all_pending': 1}</field>
         <field name="help" type="html">
             <p>
                 Las solicitudes representan productos individuales

@@ -32,6 +32,8 @@ class PurchaseRequestLine(models.Model):
     _order = 'create_date desc'
     _rec_name = 'product_id'
 
+    active = fields.Boolean(string='Activo', default=True)
+
     # =========================== Campos ===========================
     name = fields.Char(
         string='Descripción',
@@ -214,6 +216,12 @@ class PurchaseRequestLine(models.Model):
         compute='_compute_picking_count',
         help='Número de pickings asociados a esta línea de solicitud'
     )
+    purchase_order_ids = fields.Many2many(
+        comodel_name='purchase.order',
+        compute='_compute_purchase_order_ids',
+        string='Cotizaciones/Órdenes',
+        help='Órdenes de compra asociadas a esta línea de solicitud'
+    )
 
     @api.model
     def default_get(self, fields_list):
@@ -228,6 +236,12 @@ class PurchaseRequestLine(models.Model):
             # Obtener pickings únicos de las asignaciones que tengan stock_move_id
             pickings = line.purchase_request_allocation_ids.mapped('stock_move_id.picking_id').filtered(bool)
             line.picking_count = len(pickings)
+
+    @api.depends('purchase_lines.order_id')
+    def _compute_purchase_order_ids(self):
+        for rec in self:
+            orders = rec.purchase_lines.mapped('order_id').filtered(bool)
+            rec.purchase_order_ids = [(6, 0, orders.ids)]
 
     @api.depends('purchase_lines.state', 'purchase_lines.order_id.state')
     def _compute_purchase_state(self):

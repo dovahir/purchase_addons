@@ -6,7 +6,7 @@
               name="Solicitudes de Insumos"
               parent="purchase.menu_procurement_management"
               action="purchase_request_line_form_action"
-              sequence="-5"
+              sequence="1"
               groups="purchase.group_purchase_manager"/>
 
 </odoo>

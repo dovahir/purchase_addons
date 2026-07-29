@@ -88,12 +88,12 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
                     % line.product_id.display_name
                 )
             # Validar que no supere la cantidad pendiente por comprar
-            request_line = line.request_line_id
-            if hasattr(request_line, 'pending_qty_to_buy') and line.product_qty > request_line.pending_qty_to_buy:
-                raise UserError(
-                    _('La cantidad solicitada para %s (%.2f) excede la cantidad pendiente por comprar (%.2f).')
-                    % (line.product_id.display_name, line.product_qty, request_line.pending_qty_to_buy)
-                )
+            # request_line = line.request_line_id
+            # if hasattr(request_line, 'pending_qty_to_buy') and line.product_qty > request_line.pending_qty_to_buy:
+            #     raise UserError(
+            #         _('La cantidad solicitada para %s (%.2f) excede la cantidad pendiente por comprar (%.2f).')
+            #         % (line.product_id.display_name, line.product_qty, request_line.pending_qty_to_buy)
+            #     )
 
         # Crear la PO si no se seleccionó una existente
         if not order:

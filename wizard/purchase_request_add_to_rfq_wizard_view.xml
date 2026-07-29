@@ -26,7 +26,8 @@
                     <field name="purchase_order_id"
                            options="{'no_create': True}"
                            placeholder="Deje vacío este campo para crear una RFQ nueva"
-                           domain="[('state', 'in', ['draft', 'sent'])]"/>
+                           domain="[('state', 'in', ['draft'])]"/>
+<!--                           domain="[('state', 'in', ['draft', 'sent'])]"/>-->
                 </group>
 
                 <!-- Campos para nueva RFQ (se ocultan si se selecciona una existente) -->
@@ -41,7 +42,7 @@
                 <field name="line_ids" nolabel="1" mode="tree">
                     <tree editable="bottom" create="false" delete="false">
                         <field name="wizard_id" column_invisible="1"/>
-                        <field name="selected" widget="boolean_toggle"/>
+                        <field name="selected" widget="boolean_toggle" column_invisible="1"/>
                         <field name="request_line_id" column_invisible="1"/>
                         <field name="product_id" readonly="1" options="{'no_create': True}"/>
                         <field name="product_qty" string="Cantidad" decoration-bf="1"/>
