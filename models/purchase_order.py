@@ -111,7 +111,7 @@ class PurchaseOrder(models.Model):
                         allocation._notify_allocation(qty_to_add)
                 # Recalcular estado de las líneas de solicitud afectadas
                 for req_line in po_line.purchase_request_lines:
-                    req_line._update_state_from_purchase_lines()
+                    req_line._refresh_quantities()
 
         return res
 
@@ -127,6 +127,7 @@ class PurchaseOrder(models.Model):
                 if to_update:
                     for line in to_update:
                         line._update_state_from_purchase_lines()
+                        line._refresh_quantities()
                     # Publicar mensaje en cada línea
                     for line in to_update:
                         line.message_post(
@@ -145,7 +146,7 @@ class PurchaseOrder(models.Model):
                     for req_line in request_lines:
                         # Remover la relación con esta línea de compra
                         req_line.purchase_lines = [fields.Command.unlink(po_line.id)]
-                        req_line._update_state_from_purchase_lines()
+                        req_line._refresh_quantities()
         return super().unlink()
 
 
@@ -241,29 +242,42 @@ class PurchaseOrderLine(models.Model):
                                 alloc.write({'requested_product_uom_qty': new_requested})
 
                         # Actualizar el estado de todas las líneas de solicitud afectadas
+                        # Después de actualizar las asignaciones y request_lines
                         for req_line in request_lines:
-                            req_line._update_state_from_purchase_lines()
+                            req_line._refresh_quantities()
 
         return res
 
+    # def unlink(self):
+    #     """Al eliminar una línea de compra:
+    #     - Sumar cantidad no recibida a qty_cancelled en la línea de solicitud.
+    #     - Desvincular y actualizar estado.
+    #     """
+    #     for line in self:
+    #         # Procesar asignaciones antes de eliminar la línea
+    #         for alloc in line.purchase_request_allocation_ids:
+    #             req_line = alloc.purchase_request_line_id
+    #             # Cantidad no recibida en esta asignación
+    #             pending_qty = alloc.requested_product_uom_qty - alloc.allocated_product_qty
+    #             if pending_qty > 0.0:
+    #                 req_line.qty_cancelled += pending_qty
+    #                 req_line.message_post(
+    #                     body=_('Cantidad cancelada por eliminación de línea de compra: %.2f %s.')
+    #                          % (pending_qty, alloc.product_uom_id.name)
+    #                 )
+    #             # Si la asignación ya está completamente recibida, no se cancela nada
+    #         # Desvincular líneas de solicitud
+    #         request_lines = line.purchase_request_lines
+    #         if request_lines:
+    #             for req_line in request_lines:
+    #                 # Remover la relación con esta línea de compra
+    #                 req_line.purchase_lines = [fields.Command.unlink(line.id)]
+    #                 req_line._update_state_from_purchase_lines()
+    #     return super().unlink()
+
     def unlink(self):
-        """Al eliminar una línea de compra:
-        - Sumar cantidad no recibida a qty_cancelled en la línea de solicitud.
-        - Desvincular y actualizar estado.
-        """
+        """Al eliminar una línea de compra: desvincular y actualizar estado."""
         for line in self:
-            # Procesar asignaciones antes de eliminar la línea
-            for alloc in line.purchase_request_allocation_ids:
-                req_line = alloc.purchase_request_line_id
-                # Cantidad no recibida en esta asignación
-                pending_qty = alloc.requested_product_uom_qty - alloc.allocated_product_qty
-                if pending_qty > 0.0:
-                    req_line.qty_cancelled += pending_qty
-                    req_line.message_post(
-                        body=_('Cantidad cancelada por eliminación de línea de compra: %.2f %s.')
-                             % (pending_qty, alloc.product_uom_id.name)
-                    )
-                # Si la asignación ya está completamente recibida, no se cancela nada
             # Desvincular líneas de solicitud
             request_lines = line.purchase_request_lines
             if request_lines:

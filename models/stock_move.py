@@ -82,8 +82,8 @@ class StockMove(models.Model):
                         allocation.write({'allocated_product_qty': new_allocated})
                         allocation._notify_allocation(qty_to_add)
 
-                # Actualizar el estado de la línea de solicitud
-                request_line._update_state_from_purchase_lines()
+                # Forzar actualización de cantidades y estado
+                request_line._refresh_quantities()
 
                 # Si la línea de solicitud está completamente recibida, marcar como 'purchased'
                 if request_line.qty_done >= request_line.product_qty:

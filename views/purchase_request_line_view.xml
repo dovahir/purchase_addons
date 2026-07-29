@@ -54,10 +54,11 @@
                         class="btn-primary"
                         invisible="not purchase_lines"/>
                 <field name="line_state" widget="badge"
-                       decoration-muted="line_state == 'cancel'"
-                       decoration-info="line_state in ('pending','email_sent','in_progress')"
-                       decoration-warning="line_state == 'to_receive'"
-                       decoration-success="line_state in ('partially_purchased','purchased')"/>
+                       decoration-muted="line_state == 'pending'"
+                       decoration-info="line_state in ('email_sent','in_progress')"
+                       decoration-primary="line_state == 'to_receive'"
+                       decoration-success="line_state in ('partially_purchased','purchased')"
+                       decoration-danger="line_state == 'cancel'"/>
                 <field name="purchase_state" string="Estado de compra" optional="hide"
                        widget="badge"
                        decoration-success="purchase_state == 'purchase' or purchase_state == 'done'"

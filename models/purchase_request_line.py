@@ -510,6 +510,13 @@ class PurchaseRequestLine(models.Model):
                 po.button_cancel()
                 self.message_post(body=_('La RFQ %s ha sido cancelada porque quedó vacía.') % po.name)
 
+    def _refresh_quantities(self):
+        """Fuerza la recomputación de todos los campos de cantidad y estado."""
+        for rec in self:
+            rec._compute_qty()
+            rec._compute_pending_qty()
+            rec._update_state_from_purchase_lines()
+
     # =========================== Acciones de smart buttons ===========================
     # def action_open_request(self):
     #     self.ensure_one()
