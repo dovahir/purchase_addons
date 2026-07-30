@@ -17,7 +17,7 @@
         - Trazabilidad completa con asignaciones (stock.move y purchase.order.line)
         
     """,
-    'author': 'Dovahir',
+    'author': 'Aldahir',
     'website': 'https://github.com/dovahir/purchase_addons',
     'depends': [
         'purchase',
