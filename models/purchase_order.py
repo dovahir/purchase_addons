@@ -7,18 +7,6 @@ from odoo.exceptions import UserError, ValidationError
 class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
-    # ===== Nuevos campos =====
-    # purchase_request_ids = fields.Many2many(
-    #     comodel_name='purchase.request',
-    #     relation='purchase_order_purchase_request_rel',
-    #     column1='purchase_order_id',
-    #     column2='purchase_request_id',
-    #     string='Solicitudes de insumos',
-    #     readonly=True,
-    #     copy=False,
-    #     help='Solicitudes de insumos vinculadas a esta orden de compra',
-    #     tracking=False,
-    # )
     purchase_request_line_ids = fields.Many2many(
         comodel_name='purchase.request.line',
         relation='purchase_order_purchase_request_line_rel',
@@ -39,29 +27,6 @@ class PurchaseOrder(models.Model):
         for order in self:
             order.purchase_request_line_count = len(order.purchase_request_line_ids)
 
-    # purchase_request_count = fields.Integer(
-    #     compute='_compute_purchase_request_count',
-    #     string='Solicitudes'
-    # )
-
-    # def _compute_purchase_request_count(self):
-    #     for order in self:
-    #         order.purchase_request_count = len(order.purchase_request_ids)
-
-    # ===== Smart button =====
-    # def action_open_purchase_requests(self):
-    #     self.ensure_one()
-    #     action = self.env['ir.actions.actions']._for_xml_id(
-    #         'purchase_addons.action_purchase_request_form'
-    #     )
-    #     requests = self.mapped('purchase_request_ids')
-    #     if len(requests) > 1:
-    #         action['domain'] = [('id', 'in', requests.ids)]
-    #     elif requests:
-    #         action['views'] = [(self.env.ref('purchase_addons.purchase_request_form').id, 'form')]
-    #         action['view_mode'] = 'form'
-    #         action['res_id'] = requests.id
-    #     return action
     def action_open_purchase_request_lines(self):
         self.ensure_one()
         action = self.env['ir.actions.actions']._for_xml_id('purchase_addons.purchase_request_line_form_action')
@@ -78,10 +43,7 @@ class PurchaseOrder(models.Model):
         return res
 
     def button_confirm(self):
-        """Al confirmar la orden:
-        - Actualizar líneas de solicitud a 'to_receive'.
-        - Para servicios, marcar asignaciones como completadas (no hay recepción física).
-        """
+
         res = super().button_confirm()
         for order in self:
             # 1. Actualizar líneas de solicitud (productos stock)
@@ -115,8 +77,8 @@ class PurchaseOrder(models.Model):
 
         return res
 
+    # Al cancelar la orden, actualizar el estado de las líneas de solicitud vinculadas
     def button_cancel(self):
-        """Al cancelar la orden, actualizar el estado de las líneas de solicitud vinculadas."""
         res = super().button_cancel()
         for order in self:
             request_lines = order.mapped('order_line.purchase_request_lines')
@@ -136,8 +98,8 @@ class PurchaseOrder(models.Model):
                         )
         return res
 
+    # Al eliminar la orden, desvincular las líneas de solicitud y actualizar su estado
     def unlink(self):
-        """Al eliminar la orden, desvincular las líneas de solicitud y actualizar su estado."""
         for order in self:
             po_lines = order.order_line
             for po_line in po_lines:
@@ -172,10 +134,9 @@ class PurchaseOrderLine(models.Model):
         readonly=False,  # para que se pueda modificar desde código
     )
 
+
+    # Abre la vista de líneas de solicitud vinculadas a esta línea de compra
     def action_open_request_line_tree_view(self):
-        """
-        Abre la vista de líneas de solicitud vinculadas a esta línea de compra.
-        """
         self.ensure_one()
         request_line_ids = self.purchase_request_lines.ids
         if not request_line_ids:
@@ -248,35 +209,8 @@ class PurchaseOrderLine(models.Model):
 
         return res
 
-    # def unlink(self):
-    #     """Al eliminar una línea de compra:
-    #     - Sumar cantidad no recibida a qty_cancelled en la línea de solicitud.
-    #     - Desvincular y actualizar estado.
-    #     """
-    #     for line in self:
-    #         # Procesar asignaciones antes de eliminar la línea
-    #         for alloc in line.purchase_request_allocation_ids:
-    #             req_line = alloc.purchase_request_line_id
-    #             # Cantidad no recibida en esta asignación
-    #             pending_qty = alloc.requested_product_uom_qty - alloc.allocated_product_qty
-    #             if pending_qty > 0.0:
-    #                 req_line.qty_cancelled += pending_qty
-    #                 req_line.message_post(
-    #                     body=_('Cantidad cancelada por eliminación de línea de compra: %.2f %s.')
-    #                          % (pending_qty, alloc.product_uom_id.name)
-    #                 )
-    #             # Si la asignación ya está completamente recibida, no se cancela nada
-    #         # Desvincular líneas de solicitud
-    #         request_lines = line.purchase_request_lines
-    #         if request_lines:
-    #             for req_line in request_lines:
-    #                 # Remover la relación con esta línea de compra
-    #                 req_line.purchase_lines = [fields.Command.unlink(line.id)]
-    #                 req_line._update_state_from_purchase_lines()
-    #     return super().unlink()
-
+    # Al eliminar una línea de compra: desvincular y actualizar estado
     def unlink(self):
-        """Al eliminar una línea de compra: desvincular y actualizar estado."""
         for line in self:
             # Desvincular líneas de solicitud
             request_lines = line.purchase_request_lines

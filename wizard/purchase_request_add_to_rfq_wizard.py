@@ -54,9 +54,9 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         string='Líneas de solicitud',
     )
 
+    # Obtiene el tipo de entrega por defecto de la compañía
     @api.model
     def _default_picking_type(self):
-        """Obtiene el tipo de entrega por defecto de la compañía."""
         company_id = self.env.company.id
         types = self.env['stock.picking.type'].search(
             [('code', '=', 'incoming'), ('warehouse_id.company_id', '=', company_id)]
@@ -67,8 +67,8 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             )
         return types[:1]
 
+    # Agrega las líneas seleccionadas a una RFQ existente o crea una nueva
     def add_to_rfq(self):
-        """Agrega las líneas seleccionadas a una RFQ existente o crea una nueva."""
         self.ensure_one()
         order = self.purchase_order_id
         supplier = self.supplier_id
@@ -87,13 +87,6 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
                     _('La cantidad para el producto %s debe ser mayor a 0.')
                     % line.product_id.display_name
                 )
-            # Validar que no supere la cantidad pendiente por comprar
-            # request_line = line.request_line_id
-            # if hasattr(request_line, 'pending_qty_to_buy') and line.product_qty > request_line.pending_qty_to_buy:
-            #     raise UserError(
-            #         _('La cantidad solicitada para %s (%.2f) excede la cantidad pendiente por comprar (%.2f).')
-            #         % (line.product_id.display_name, line.product_qty, request_line.pending_qty_to_buy)
-            #     )
 
         # Crear la PO si no se seleccionó una existente
         if not order:
@@ -181,8 +174,8 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
             'target': 'current',
         }
 
+    # Crea una nueva orden de compra con los campos del wizard
     def _create_purchase_order(self, selected_lines):
-        """Crea una nueva orden de compra con los campos del wizard."""
         self.ensure_one()
         # Tomar datos del wizard
         po_vals = {
@@ -267,12 +260,6 @@ class PurchaseRequestAddToRfqWizardLine(models.TransientModel):
         required=True,
         ondelete='cascade',
     )
-    # request_id = fields.Many2one(
-    #     comodel_name='purchase.request',
-    #     related='request_line_id.request_id',
-    #     string='Solicitud',
-    #     readonly=True,
-    # )
     line_state = fields.Selection(
         related='request_line_id.line_state',
         string='Estado',

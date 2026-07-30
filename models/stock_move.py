@@ -45,10 +45,6 @@ class StockMove(models.Model):
         return res
 
     def _action_done(self, cancel_backorder=False):
-        """
-        Sobrescritura del método _action_done en Odoo v17.
-        Al validar el movimiento (recepción), actualizar las asignaciones y las líneas de solicitud.
-        """
         res = super()._action_done(cancel_backorder=cancel_backorder)
 
         for move in self:
@@ -113,11 +109,3 @@ class StockMoveLine(models.Model):
         readonly=True,
         store=True,
     )
-
-    def allocate(self):
-        """
-        Método que se puede llamar desde el picking para asignar cantidades.
-        Pero ahora la lógica principal está en _action_done de stock.move.
-        """
-        # Mantenemos este método por compatibilidad, pero la lógica se movió a _action_done
-        pass

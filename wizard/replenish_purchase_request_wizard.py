@@ -15,8 +15,8 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
         string='Productos',
     )
 
+    # Agrega los productos seleccionados como nuevas líneas de solicitud
     def add_to_request(self):
-        """Agrega los productos seleccionados como nuevas líneas de solicitud."""
         self.ensure_one()
 
         lines = self.line_ids.filtered(lambda l: l.product_qty > 0)
@@ -75,9 +75,9 @@ class ReplenishPurchaseRequestWizard(models.TransientModel):
             }
         }
 
+    # Precarga los productos seleccionados desde los puntos de pedido
     @api.model
     def default_get(self, fields_list):
-        """Precarga los productos seleccionados desde los puntos de pedido."""
         defaults = super().default_get(fields_list)
 
         active_model = self.env.context.get('active_model')
@@ -111,7 +111,6 @@ class ReplenishPurchaseRequestWizardLine(models.TransientModel):
     product_id = fields.Many2one(
         comodel_name='product.product',
         string='Producto',
-        # readonly removido - se manejará en la vista XML
     )
     product_qty = fields.Float(
         string='Cantidad a solicitar',

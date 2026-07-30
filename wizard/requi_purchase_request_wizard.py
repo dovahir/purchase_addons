@@ -24,8 +24,8 @@ class RequiPurchaseRequestWizard(models.TransientModel):
         string='Líneas',
     )
 
+    # Agrega las líneas seleccionadas como nuevas líneas de solicitud
     def add_to_request(self):
-        """Agrega las líneas seleccionadas como nuevas líneas de solicitud."""
         self.ensure_one()
 
         selected_lines = self.line_ids.filtered('selected')
@@ -121,9 +121,9 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             }
         }
 
+    # Precarga las líneas de la requisición en el wizard
     @api.model
     def default_get(self, fields_list):
-        """Precarga las líneas de la requisición en el wizard."""
         defaults = super().default_get(fields_list)
 
         active_id = self.env.context.get('active_id')

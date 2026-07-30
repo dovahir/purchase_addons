@@ -38,8 +38,8 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
         readonly=True,
     )
 
+    # Envía el correo con las líneas seleccionadas
     def action_send_email(self):
-        """Envía el correo con las líneas seleccionadas."""
         self.ensure_one()
         if not self.partner_id:
             raise UserError(_('Debe seleccionar un proveedor.'))
@@ -107,8 +107,8 @@ class PurchaseRequestSendEmailWizard(models.TransientModel):
             }
         }
 
+    # Genera el PDF de cotización usando la plantilla QWeb
     def _generate_email_pdf(self, lines):
-        """Genera el PDF de cotización usando la plantilla QWeb."""
         # Preparar valores para QWeb
         values = {
             'lines': lines,

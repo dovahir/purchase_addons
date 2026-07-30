@@ -59,20 +59,6 @@ class PurchaseRequestLine(models.Model):
         tracking=True,
         digits='Product Unit of Measure',
     )
-    # request_id = fields.Many2one(
-    #     comodel_name='purchase.request',
-    #     string='Solicitud',
-    #     ondelete='cascade',
-    #     readonly=True,
-    #     index=True,
-    #     auto_join=True,
-    # )
-    # company_id = fields.Many2one(
-    #     comodel_name='res.company',
-    #     related='request_id.company_id',
-    #     string='Compañía',
-    #     store=True,
-    # )
     date_required = fields.Date(
         string='Fecha requerida',
         required=True,
@@ -82,18 +68,6 @@ class PurchaseRequestLine(models.Model):
     note = fields.Text(
         string='Especificaciones',
     )
-    # supplier_id = fields.Many2one(
-    #     comodel_name='res.partner',
-    #     string='Proveedor preferido',
-    #     compute='_compute_supplier_id',
-    #     compute_sudo=True,
-    #     store=True,
-    # )
-    # origin = fields.Char(
-    #     string='Origen',
-    #     help='Documento o proceso que origina la solicitud',
-    #     tracking=True,
-    # )
     requester_name = fields.Char(
         string='Solicitado por',
         help='Nombre de la persona que solicitó la compra',
@@ -384,7 +358,6 @@ class PurchaseRequestLine(models.Model):
                         rec._compute_qty()
 
     def action_cancel_multiple(self):
-        """Cancela todas las líneas seleccionadas."""
         if not self:
             raise UserError(_('No hay líneas seleccionadas.'))
 
@@ -503,7 +476,6 @@ class PurchaseRequestLine(models.Model):
 
 
     def _cancel_empty_rfqs(self):
-        """Cancela las RFQ que hayan quedado sin líneas (solo en draft o sent)."""
         # Obtener PO de las líneas de compra de esta línea
         for po in self.purchase_lines.mapped('order_id'):
             if po.state in ('draft', 'sent') and not po.order_line:
@@ -511,23 +483,12 @@ class PurchaseRequestLine(models.Model):
                 self.message_post(body=_('La RFQ %s ha sido cancelada porque quedó vacía.') % po.name)
 
     def _refresh_quantities(self):
-        """Fuerza la recomputación de todos los campos de cantidad y estado."""
         for rec in self:
             rec._compute_qty()
             rec._compute_pending_qty()
             rec._update_state_from_purchase_lines()
 
     # =========================== Acciones de smart buttons ===========================
-    # def action_open_request(self):
-    #     self.ensure_one()
-    #     return {
-    #         'type': 'ir.actions.act_window',
-    #         'name': _('Solicitud'),
-    #         'res_model': 'purchase.request',
-    #         'res_id': self.request_id.id,
-    #         'view_mode': 'form',
-    #         'target': 'current',
-    #     }
 
     def action_open_purchase_orders(self):
         self.ensure_one()
@@ -555,13 +516,6 @@ class PurchaseRequestLine(models.Model):
         return action
 
     # =========================== CRUD y validaciones ===========================
-    # def write(self, vals):
-    #     res = super().write(vals)
-    #     if 'line_state' in vals:
-    #         for rec in self:
-    #             if rec.line_state == 'purchased':
-    #                 rec.request_id._check_all_lines_purchased()
-    #     return res
 
     def unlink(self):
         for rec in self:
@@ -581,10 +535,8 @@ class PurchaseRequestLine(models.Model):
         #         )
         return lines
 
+    # Abre el wizard de agregar a RFQ con las líneas seleccionadas
     def action_open_add_to_rfq_wizard(self):
-        """
-        Abre el wizard de agregar a RFQ con las líneas seleccionadas.
-        """
         action = self.env['ir.actions.actions']._for_xml_id('purchase_addons.action_purchase_request_add_to_rfq')
         action['context'] = {
             'active_model': 'purchase.request.line',
@@ -592,8 +544,8 @@ class PurchaseRequestLine(models.Model):
         }
         return action
 
+    # Abre el wizard de envío de correo con las líneas seleccionadas
     def action_open_send_email_wizard(self):
-        """Abre el wizard de envío de correo con las líneas seleccionadas."""
         wizard = self.env['purchase.request.send.email.wizard'].create({
             'line_ids': [
                 (0, 0, {
