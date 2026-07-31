@@ -86,7 +86,10 @@ class RequiPurchaseRequestWizard(models.TransientModel):
             new_line = self.env['purchase.request.line'].create(new_line_vals)
             added_lines.append(new_line)
 
-        # Ya no actualizamos origin ni enviamos mensajes a cabecera
+        # Cambiar estado de la requisición si está autorizada y es servicio
+        requisition = self.requisition_id
+        if requisition.state == 'approved' and requisition.tipo_requisicion == 'serv':
+            requisition.write({'state': 'purchase_order_created'})
 
         # Mensaje de éxito
         message = _('Se agregaron %d líneas desde la requisición %s.') % (
