@@ -29,3 +29,5 @@ access_requi_purchase_request_wizard_line_stock,requi.purchase.request.wizard.li
 access_replenish_purchase_request_wizard_stock,replenish.purchase.request.wizard.stock,model_replenish_purchase_request_wizard,stock.group_stock_user,1,1,1,0
 access_replenish_purchase_request_wizard_line_stock,replenish.purchase.request.wizard.line.stock,model_replenish_purchase_request_wizard_line,stock.group_stock_user,1,1,1,0
 access_purchase_request_allocation_stock,purchase.request.allocation.stock,model_purchase_request_allocation,stock.group_stock_user,1,1,1,0
+
+access_purchase_request_line_stock,purchase.request.line.stock,model_purchase_request_line,stock.group_stock_user,1,1,1,0

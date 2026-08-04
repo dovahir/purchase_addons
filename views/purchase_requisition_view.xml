@@ -15,7 +15,7 @@
                         class="oe_highlight"
                         invisible="state not in ('approved', 'purchase_order_created')"
                         help="Agregar líneas a una solicitud de insumos activa"
-                        groups="employee_purchase_requisition.employee_requisition_manager"/>
+                        groups="employee_purchase_requisition.employee_requisition_manager, stock.group_stock_user"/>
             </xpath>
         </field>
     </record>
