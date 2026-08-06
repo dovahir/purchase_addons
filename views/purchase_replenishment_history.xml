@@ -19,6 +19,12 @@
                        decoration-info="line_state in ('pending','email_sent','in_progress')"
                        decoration-warning="line_state == 'to_receive'"
                        decoration-success="line_state in ('partially_purchased','purchased')"/>
+                <field name="purchase_request_allocation_ids" column_invisible="1"/>
+                <button name="action_open_pickings" string="Ver recepciones"
+                        type="object"
+                        title="Ver recepciones"
+                        invisible="not purchase_request_allocation_ids"
+                        class="btn-primary"/>
             </tree>
         </field>
     </record>

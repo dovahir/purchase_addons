@@ -13,7 +13,7 @@
               name="Historial de reabastecimiento"
               parent="stock.menu_warehouse_report"
               action="action_purchase_replenishment_history"
-              sequence="65"
+              sequence="600"
               groups="stock.group_stock_manager"/>
 
 </odoo>
