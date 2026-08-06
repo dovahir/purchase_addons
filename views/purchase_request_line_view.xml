@@ -17,12 +17,14 @@
                             string="Añadir a RFQ"
                             type="object"
                             icon="fa-shopping-cart"
+                            groups="purchase.group_purchase_manager"
                             class="btn-primary"/>
                     <button name="action_cancel_multiple"
                             string="Cancelar seleccionadas"
                             type="object"
                             icon="fa-times"
                             class="btn-danger"
+                            groups="purchase.group_purchase_manager"
                             confirm="¿Está seguro de cancelar las líneas seleccionadas? Esta acción puede afectar órdenes de compra asociadas."/>
                 </header>
                 <field name="product_uom_category_id" column_invisible="1"/>
@@ -70,6 +72,7 @@
                         class="text-danger"
                         title="Cancelar línea"
                         invisible="line_state in ('cancel','purchased')"
+                        groups="purchase.group_purchase_manager"
                         confirm="¿Está seguro de cancelar esta línea?"/>
             </tree>
         </field>
@@ -131,6 +134,7 @@
                             type="object"
                             class="btn-primary"
                             icon="fa-shopping-cart"
+                            groups="purchase.group_purchase_manager"
                             invisible="line_state in ('cancel', 'purchased')"/>
                     <button name="action_cancel_line"
                             type="object"
