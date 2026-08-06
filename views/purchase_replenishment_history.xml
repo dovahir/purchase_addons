@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vista de árbol -->
+    <record id="view_purchase_replenishment_history_tree" model="ir.ui.view">
+        <field name="name">purchase.replenishment.history.tree</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <tree string="Historial de reabastecimiento" create="false" delete="false" edit="false">
+                <field name="create_date" string="Fecha"/>
+                <field name="product_id" string="Producto"/>
+                <field name="product_qty" string="Cant. Solicitada"/>
+                <field name="qty_done" string="Cant. Recibida"/>
+                <field name="qty_cancelled" string="Cancelado" optional="hide"/>
+                <field name="product_uom_id" string="UoM"/>
+                <field name="note" string="Notas"/>
+                <field name="line_state" string="Estado" widget="badge"
+                       decoration-muted="line_state == 'cancel'"
+                       decoration-info="line_state in ('pending','email_sent','in_progress')"
+                       decoration-warning="line_state == 'to_receive'"
+                       decoration-success="line_state in ('partially_purchased','purchased')"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_purchase_replenishment_history" model="ir.actions.act_window">
+        <field name="name">Historial de reabastecimiento</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">purchase.request.line</field>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="view_purchase_replenishment_history_tree"/>
+        <field name="domain">[('is_replenishment', '=', True)]</field>
+        <field name="context">{'default_is_replenishment': True}</field>
+        <field name="help" type="html">
+            <p>Listado de todas las líneas de solicitud generadas desde reabastecimiento.</p>
+        </field>
+    </record>
+
+</odoo>

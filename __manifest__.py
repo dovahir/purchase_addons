@@ -30,9 +30,6 @@
         # 'security/purchase_request_security.xml',
         'security/ir.model.access.csv',
 
-        # Datos
-        # 'data/purchase_request_sequence.xml',
-
         # Reportes
         'reports/purchase_request_email_report.xml',
 
@@ -43,14 +40,16 @@
 
         # Vistas principales
         'views/res_partner.xml',
-        # 'views/purchase_request_view.xml',
         'views/purchase_request_line_view.xml',
         'views/purchase_order_view.xml',
         'views/stock_move_views.xml',
         'views/replenishment_base_view.xml',
-        'views/menu_views.xml',
 		'views/purchase_requisition_view.xml',
 		'wizard/purchase_request_send_email_wizard_view.xml',
+		'views/purchase_replenishment_history.xml',
+
+        # Menu
+        'views/menu_views.xml',
 ],
     'installable': True,
     'application': True,
