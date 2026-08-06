@@ -218,7 +218,6 @@ class RequiPurchaseRequestWizardLine(models.TransientModel):
         readonly=True,
     )
     priority = fields.Selection(
-        selection=[('normal', 'Normal'), ('urgent', 'Urgente')],
         string='Prioridad',
         related='requisition_line_id.priority',
         readonly=True,

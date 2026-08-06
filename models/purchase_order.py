@@ -124,7 +124,6 @@ class PurchaseOrderLine(models.Model):
         string='Líneas de solicitud de insumos',
         readonly=True,
         copy=False,
-        tracking=False,
     )
 
     purchase_request_allocation_ids = fields.One2many(
