@@ -7,8 +7,8 @@
         <field name="model">purchase.request.line</field>
         <field name="arch" type="xml">
             <tree string="Historial de reabastecimiento" create="false" delete="false" edit="false">
-                <field name="create_date" string="Fecha"/>
-                <field name="product_id" string="Producto"/>
+                <field name="create_date" string="Fecha solicitada"/>
+                <field name="product_id" string="Producto" widget="many2one"/>
                 <field name="product_qty" string="Cant. Solicitada"/>
                 <field name="qty_done" string="Cant. Recibida"/>
                 <field name="qty_cancelled" string="Cancelado" optional="hide"/>

@@ -10,10 +10,10 @@
               groups="purchase.group_purchase_manager"/>
 
     <menuitem id="menu_purchase_replenishment_history"
-          name="Historial de reabastecimiento"
-          parent="stock.menu_warehouse_report"
-          action="action_purchase_replenishment_history"
-          sequence="20"
-          groups="stock.group_stock_manager"/>
+              name="Historial de reabastecimiento"
+              parent="stock.menu_warehouse_report"
+              action="action_purchase_replenishment_history"
+              sequence="65"
+              groups="stock.group_stock_manager"/>
 
 </odoo>
