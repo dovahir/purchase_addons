@@ -16,18 +16,17 @@
         <field name="arch" type="xml">
             <form string="Agregar líneas a cotización">
                 <group>
-                    <!-- Proveedor (obligatorio) -->
+                    <!-- Proveedor -->
                     <field name="supplier_id"
                            invisible="purchase_order_id"
                            required="not purchase_order_id"
                            options="{'no_create': True}"
                            placeholder="Seleccione un proveedor"/>
-                    <!-- Cotización existente (opcional) -->
+                    <!-- Cotización existente-->
                     <field name="purchase_order_id"
                            options="{'no_create': True}"
                            placeholder="Deje vacío este campo para crear una RFQ nueva"
                            domain="[('state', 'in', ['draft'])]"/>
-<!--                           domain="[('state', 'in', ['draft', 'sent'])]"/>-->
                 </group>
 
                 <!-- Campos para nueva RFQ (se ocultan si se selecciona una existente) -->

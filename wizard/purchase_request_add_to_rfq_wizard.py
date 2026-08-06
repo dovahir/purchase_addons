@@ -45,7 +45,6 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
     supplier_id = fields.Many2one(
         comodel_name='res.partner',
         string='Proveedor',
-        required=True,
         help='Proveedor para la nueva cotización',
     )
     line_ids = fields.One2many(
@@ -73,8 +72,8 @@ class PurchaseRequestAddToRfqWizard(models.TransientModel):
         order = self.purchase_order_id
         supplier = self.supplier_id
 
-        if not supplier:
-            raise UserError(_('Debe seleccionar un proveedor.'))
+        if not order and not supplier:
+            raise UserError(_('Debe seleccionar un proveedor para crear una nueva cotización.'))
 
         selected_lines = self.line_ids.filtered('selected')
         if not selected_lines:
