@@ -137,6 +137,7 @@
                             string="Cancelar línea"
                             class="btn-danger"
                             invisible="line_state in ('cancel','purchased')"
+                            groups="purchase.group_purchase_manager"
                             confirm="¿Está seguro de cancelar esta línea? Esta acción puede afectar órdenes de compra asociadas."/>
                     <field name="line_state" widget="statusbar"
                            statusbar_visible="pending,email_sent,in_progress,to_receive,partially_purchased,purchased"
@@ -266,6 +267,7 @@
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">purchase.request.line</field>
         <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="purchase_request_line_tree"/>
         <field name="search_view_id" ref="purchase_request_line_search"/>
         <field name="context">{'search_default_all_pending': 1}</field>
         <field name="help" type="html">
