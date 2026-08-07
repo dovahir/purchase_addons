@@ -72,6 +72,7 @@
                     <filter name="group_product" string="Producto" context="{'group_by':'product_id'}"/>
                     <filter name="group_state" string="Estado" context="{'group_by':'line_state'}"/>
                     <filter name="group_requisition" string="Requisición" context="{'group_by':'requisition_id'}"/>
+                    <filter name="group_requester_name" string="Requerido por" context="{'group_by':'requester_name'}"/>
                     <filter name="group_warehouse" string="Almacén" context="{'group_by': 'warehouse_id'}"/>
                     <filter name="group_date" string="Fecha de creación" context="{'group_by':'create_date'}"/>
                 </group>
@@ -84,7 +85,7 @@
 
     <!-- Action -->
     <record id="action_purchase_requisition_history" model="ir.actions.act_window">
-        <field name="name">Solicitudes de compra</field>
+        <field name="name">Mis solicitudes de compra</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">purchase.request.line</field>
         <field name="view_mode">tree</field>
