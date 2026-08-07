@@ -205,7 +205,7 @@ class PurchaseRequestLine(models.Model):
         readonly=True
     )
 
-    requisition_note = fields.Html(
+    requisition_note = fields.Text(
         related='requisition_id.note',
         string='Nota de requisición',
         readonly=True,
