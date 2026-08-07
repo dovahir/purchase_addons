@@ -9,23 +9,23 @@
             <tree string="Solicitudes de compra" create="false" delete="false" edit="false">
                 <field name="create_uid" string="Solicita" optional="hide"/>
                 <field name="product_uom_category_id" column_invisible="1"/>
-                <field name="priority" widget="priority" optional="show" nolabel="1"/>
+                <field name="priority" widget="priority" optional="hide" nolabel="1"/>
                 <field name="product_id" string="Producto" options="{'no_create': True}" widget="many2one"/>
                 <field name="note"/>
                 <field name="product_qty" string="Cant. Solicitada"/>
-                <field name="pending_qty_to_buy" string="Pendiente comprar" optional="hide"/>
-                <field name="qty_done" string="Recibido" optional="hide"/>
+                <field name="pending_qty_to_buy" string="Pendiente comprar" optional="show"/>
+                <field name="qty_done" string="Recibido" optional="show"/>
                 <field name="qty_cancelled" string="Cancelado" optional="hide"/>
                 <field name="product_uom_id" string="UoM" groups="uom.group_uom" options="{'no_create': True}"/>
                 <field name="requester_name" string="Requiere" optional="show"/>
                 <field name="requisition_id" string="Requisición" optional="show" widget="many2one"/>
-                <field name="analytic_distribution" optional="show"
+                <field name="analytic_distribution" optional="hide"
                        string="Dist. Analítica"
                        widget="analytic_distribution"
                        groups="analytic.group_analytic_accounting"
                        options="{'product_field': 'product_id', 'business_domain': 'req'}"/>
-                <field name="project_id" string="Proyecto" optional="show"/>
-                <field name="task_id" string="Tarea" optional="show"/>
+                <field name="project_id" string="Proyecto" optional="hide"/>
+                <field name="task_id" string="Tarea" optional="hide"/>
                 <field name="create_date" string="Fecha solicitada" help="Fecha que se creó la línea"/>
                 <field name="date_required" string="Fecha requerida"/>
                 <field name="line_state" widget="badge"
@@ -34,22 +34,67 @@
                        decoration-primary="line_state == 'to_receive'"
                        decoration-success="line_state in ('partially_purchased','purchased')"
                        decoration-danger="line_state == 'cancel'"/>
+                <field name="purchase_request_allocation_ids" column_invisible="1"/>
+                <button name="action_open_pickings" string="Ver recepciones"
+                        type="object"
+                        title="Ver recepciones"
+                        invisible="not purchase_request_allocation_ids"
+                        groups="stock.group_stock_user"
+                        class="btn-primary"/>
             </tree>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda -->
+    <record id="purchase_requisition_history_search" model="ir.ui.view">
+        <field name="name">purchase.requisition.history.search</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar en Solicitudes de compra">
+                <!-- Campos de búsqueda -->
+                <field name="product_id" string="Producto" filter_domain="[('product_id','=',self)]"/>
+                <field name="requisition_id" string="Requisición"/>
+                <field name="project_id" string="Proyecto"/>
+                <field name="task_id" string="Tarea"/>
+                <field name="requester_name" string="Requiere"/>
+
+                <separator/>
+                <!-- Filtros de estado -->
+                <filter name="all_pending" string="Pendientes" domain="[('line_state', 'not in', ['purchased', 'cancel'])]"/>
+                <filter name="state_in_progress" string="En proceso" domain="[('line_state','=','in_progress')]"/>
+                <filter name="state_to_receive" string="Por recibir" domain="[('line_state','=','to_receive')]"/>
+                <filter name="state_purchased" string="Comprados" domain="[('line_state','=','purchased')]"/>
+                <filter name="state_cancel" string="Cancelados" domain="[('line_state','=','cancel')]"/>
+
+                <separator/>
+                <!-- Agrupaciones -->
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_product" string="Producto" context="{'group_by':'product_id'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by':'line_state'}"/>
+                    <filter name="group_requisition" string="Requisición" context="{'group_by':'requisition_id'}"/>
+                    <filter name="group_warehouse" string="Almacén" context="{'group_by': 'warehouse_id'}"/>
+                    <filter name="group_date" string="Fecha de creación" context="{'group_by':'create_date'}"/>
+                </group>
+
+                <separator/>
+                <filter string="Archivado" name="archived" domain="[('active', '=', False)]"/>
+            </search>
         </field>
     </record>
 
     <!-- Action -->
     <record id="action_purchase_requisition_history" model="ir.actions.act_window">
-        <field name="name">Historial de requisiciones</field>
+        <field name="name">Solicitudes de compra</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">purchase.request.line</field>
         <field name="view_mode">tree</field>
         <field name="view_id" ref="view_purchase_requisition_history_tree"/>
+        <field name="search_view_id" ref="purchase_requisition_history_search"/>
         <field name="domain">[('is_replenishment', '=', False), ('create_uid', '=', uid)]</field>
         <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Historial de todas solicitudes de compra generadas desde requisiciones.
+                Historial de todas tus solicitudes de compra generadas desde requisiciones.
             </p>
         </field>
     </record>

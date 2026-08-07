@@ -197,6 +197,14 @@ class PurchaseRequestLine(models.Model):
         help='Órdenes de compra asociadas a esta línea de solicitud'
     )
 
+    # Campo usado para filtro de búsqueda
+    warehouse_id = fields.Many2one(
+        related='requisition_id.warehouse_id',
+        string='Almacén',
+        store='True',
+        readonly=True
+    )
+
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)

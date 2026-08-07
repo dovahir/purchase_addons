@@ -29,6 +29,39 @@
         </field>
     </record>
 
+        <!-- Vista de búsqueda -->
+    <record id="purchase_replenishment_history_search" model="ir.ui.view">
+        <field name="name">purchase.replenishment.history.search</field>
+        <field name="model">purchase.request.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar en Historial de Reabastecimiento">
+                <!-- Campos de búsqueda -->
+                <field name="product_id" string="Producto" filter_domain="[('product_id','=',self)]"/>
+                <field name="create_date" string="Fecha de creación"/>
+                <field name="requester_name" string="Solicitado por"/>
+
+                <separator/>
+                <!-- Filtros de estado -->
+                <filter name="all_pending" string="Pendientes" domain="[('line_state', 'not in', ['purchased', 'cancel'])]"/>
+                <filter name="state_in_progress" string="En proceso" domain="[('line_state','=','in_progress')]"/>
+                <filter name="state_to_receive" string="Por recibir" domain="[('line_state','=','to_receive')]"/>
+                <filter name="state_purchased" string="Comprados" domain="[('line_state','=','purchased')]"/>
+                <filter name="state_cancel" string="Cancelados" domain="[('line_state','=','cancel')]"/>
+
+                <separator/>
+                <!-- Agrupaciones -->
+                <group expand="0" string="Agrupar por">
+                    <filter name="group_product" string="Producto" context="{'group_by':'product_id'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by':'line_state'}"/>
+                    <filter name="group_date" string="Fecha de creación" context="{'group_by':'create_date'}"/>
+                </group>
+
+                <separator/>
+                <filter string="Archivado" name="archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
     <!-- Action -->
     <record id="action_purchase_replenishment_history" model="ir.actions.act_window">
         <field name="name">Historial de reabastecimiento</field>
@@ -36,6 +69,7 @@
         <field name="res_model">purchase.request.line</field>
         <field name="view_mode">tree</field>
         <field name="view_id" ref="view_purchase_replenishment_history_tree"/>
+        <field name="search_view_id" ref="purchase_replenishment_history_search"/>
         <field name="domain">[('is_replenishment', '=', True)]</field>
         <field name="context">{'default_is_replenishment': True}</field>
         <field name="help" type="html">
