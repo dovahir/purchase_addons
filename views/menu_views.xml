@@ -16,4 +16,10 @@
               sequence="600"
               groups="stock.group_stock_manager"/>
 
+    <menuitem id="menu_purchase_requisition_history"
+              name="Historial de requisiciones"
+              parent="employee_purchase_requisition.purchase_requisition"
+              action="action_purchase_requisition_history"
+              groups="employee_purchase_requisition.employee_requisition_user"/>
+
 </odoo>

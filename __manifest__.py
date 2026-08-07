@@ -47,6 +47,7 @@
 		'views/purchase_requisition_view.xml',
 		'wizard/purchase_request_send_email_wizard_view.xml',
 		'views/purchase_replenishment_history.xml',
+		'views/purchase_requisition_history.xml',
 
         # Menu
         'views/menu_views.xml',

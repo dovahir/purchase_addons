@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Vista de árbol -->
+    <!-- Vista tree -->
     <record id="view_purchase_replenishment_history_tree" model="ir.ui.view">
         <field name="name">purchase.replenishment.history.tree</field>
         <field name="model">purchase.request.line</field>
@@ -39,7 +39,9 @@
         <field name="domain">[('is_replenishment', '=', True)]</field>
         <field name="context">{'default_is_replenishment': True}</field>
         <field name="help" type="html">
-            <p>Listado de todas las líneas de solicitud generadas desde reabastecimiento.</p>
+            <p class="o_view_nocontent_smiling_face">
+                Listado de todas las solicitudes de reabastecimiento generadas.
+            </p>
         </field>
     </record>
 
