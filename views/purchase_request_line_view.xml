@@ -211,6 +211,7 @@
                                groups="analytic.group_analytic_accounting"
                                readonly="line_state != 'draft'"
                                options="{'product_field': 'product_id', 'business_domain': 'purchase_order'}"/>
+                        <field name="requisition_note" readonly="1" invisible="requisition_id == False"/>
                     </group>
 
                     <notebook>

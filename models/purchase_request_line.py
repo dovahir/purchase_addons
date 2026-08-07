@@ -205,6 +205,13 @@ class PurchaseRequestLine(models.Model):
         readonly=True
     )
 
+    requisition_note = fields.Html(
+        related='requisition_id.note',
+        string='Nota de requisición',
+        readonly=True,
+        help='Nota copiada desde la requisición origen.'
+    )
+
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
