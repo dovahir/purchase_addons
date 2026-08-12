@@ -228,7 +228,43 @@ class PurchaseOrderLine(models.Model):
         return val
 
     def copy(self, default=None):
+        """Sobrescritura para copiar líneas de compra y crear asignaciones automáticamente."""
         if default is None:
             default = {}
-        # Copiar la línea (purchase_request_lines se copia por copy=True, asignaciones no se copian por copy=False)
-        return super().copy(default)
+    
+        # 1. Guardar datos de las asignaciones originales
+        original_allocations_data = []
+        for alloc in self.purchase_request_allocation_ids:
+            original_allocations_data.append({
+                'purchase_request_line_id': alloc.purchase_request_line_id.id,
+                'requested_product_uom_qty': alloc.requested_product_uom_qty,
+                'allocated_product_qty': 0.0,  # Nueva línea empieza sin recepciones
+                'product_uom_id': alloc.product_uom_id.id,
+                'product_id': alloc.product_id.id,
+            })
+        original_request_lines = self.purchase_request_lines.ids
+    
+        # 2. Crear la copia de la línea (sin asignaciones porque copy=False en el One2many)
+        new_line = super().copy(default)
+    
+        # 3. Crear nuevas asignaciones para la nueva línea
+        new_allocation_ids = []
+        if original_allocations_data:
+            for alloc_vals in original_allocations_data:
+                alloc_vals['purchase_line_id'] = new_line.id
+                new_alloc = self.env['purchase.request.allocation'].create(alloc_vals)
+                new_allocation_ids.append(new_alloc.id)
+    
+            # 4. Actualizar explícitamente el campo One2many de la nueva línea
+            if new_allocation_ids:
+                new_line.write({'purchase_request_allocation_ids': [(6, 0, new_allocation_ids)]})
+    
+        # 5. Mantener relación Many2many con líneas de solicitud
+        if original_request_lines and not new_line.purchase_request_lines:
+            new_line.write({'purchase_request_lines': [(6, 0, original_request_lines)]})
+    
+        # 6. Forzar actualización de las líneas de solicitud afectadas
+        for req_line in new_line.purchase_request_lines:
+            req_line._refresh_quantities()
+    
+        return new_line
