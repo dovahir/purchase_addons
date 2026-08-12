@@ -123,13 +123,14 @@ class PurchaseOrderLine(models.Model):
         column2='purchase_request_line_id',
         string='Líneas de solicitud de insumos',
         readonly=True,
-        copy=False,
+        copy=True,
     )
 
     purchase_request_allocation_ids = fields.One2many(
         'purchase.request.allocation',
         'purchase_line_id',
         string='Asignaciones',
+        copy=False,
         readonly=False,  # para que se pueda modificar desde código
     )
 
@@ -147,64 +148,57 @@ class PurchaseOrderLine(models.Model):
 
     # ===== Al escribir la línea, actualizar el estado de las solicitudes =====
     def write(self, vals):
-        # Guardar datos antes de la escritura si cambia product_qty
+        """
+        Sobrescritura del método write para manejar la trazabilidad de cantidades.
+        - Si la línea tiene líneas de solicitud pero no asignaciones, las crea.
+        - Si ya tiene asignaciones, actualiza su requested_product_uom_qty al nuevo product_qty.
+        """
+        # Preparar datos antes de ejecutar el write
         if 'product_qty' in vals:
-            lines_data = {}
+            new_qty = vals['product_qty']
+            lines_to_create = self.env['purchase.order.line']
+            lines_to_update = self.env['purchase.order.line']
+
             for line in self:
-                allocations = line.purchase_request_allocation_ids
-                if allocations:
-                    lines_data[line.id] = {
-                        'old_qty': line.product_qty,
-                        'allocations': allocations,
-                        'total_requested': sum(allocations.mapped('requested_product_uom_qty')),
-                        'request_lines': allocations.mapped('purchase_request_line_id'),
-                    }
-        # Ejecutar escritura
+                if line.purchase_request_lines and not line.purchase_request_allocation_ids:
+                    lines_to_create |= line
+                elif line.purchase_request_allocation_ids:
+                    lines_to_update |= line
+
+        # Ejecutar el write original (guarda product_qty, etc.)
         res = super().write(vals)
 
-        # Procesar cambios si se modificó product_qty
+        # Crear asignaciones para líneas que no tenían
         if 'product_qty' in vals:
-            for line in self:
-                if line.id in lines_data:
-                    data = lines_data[line.id]
-                    old_qty = data['old_qty']
-                    new_qty = line.product_qty
-                    allocations = data['allocations']
-                    total_requested = data['total_requested']
-                    request_lines = data['request_lines']
+            for line in lines_to_create:
+                for req_line in line.purchase_request_lines:
+                    self.env['purchase.request.allocation'].create({
+                        'purchase_request_line_id': req_line.id,
+                        'purchase_line_id': line.id,
+                        'requested_product_uom_qty': line.product_qty,
+                        'allocated_product_qty': 0.0,
+                        'product_uom_id': req_line.product_uom_id.id,
+                        'product_id': req_line.product_id.id,
+                    })
+                # Forzar actualización de líneas de solicitud
+                for req_line in line.purchase_request_lines:
+                    req_line._refresh_quantities()
 
-                    if old_qty != new_qty and total_requested > 0:
-                        # Calcular factor de escala (evitar división por cero)
-                        factor = new_qty / old_qty if old_qty != 0 else 1.0
-
-                        for alloc in allocations:
-                            # Nueva cantidad solicitada en esta asignación
-                            new_requested = alloc.requested_product_uom_qty * factor
-
-                            # No puede ser menor que lo ya recibido
-                            if new_requested < alloc.allocated_product_qty:
-                                new_requested = alloc.allocated_product_qty
-
-                            # No puede superar la cantidad disponible de la línea de solicitud
-                            request_line = alloc.purchase_request_line_id
-                            # Suma de otras asignaciones de la misma línea (excluyendo esta)
-                            other_allocations = request_line.purchase_request_allocation_ids - alloc
-                            total_other = sum(other_allocations.mapped('requested_product_uom_qty'))
-                            # Cantidad máxima permitida para esta asignación
-                            max_allowed = request_line.product_qty - request_line.qty_done - total_other
-                            if new_requested > max_allowed:
-                                new_requested = max_allowed
-                            if new_requested < 0:
-                                new_requested = 0.0
-
-                            # Escribir el nuevo valor si cambió
-                            if new_requested != alloc.requested_product_uom_qty:
-                                alloc.write({'requested_product_uom_qty': new_requested})
-
-                        # Actualizar el estado de todas las líneas de solicitud afectadas
-                        # Después de actualizar las asignaciones y request_lines
-                        for req_line in request_lines:
-                            req_line._refresh_quantities()
+        # Actualizar asignaciones existentes al nuevo product_qty
+        if 'product_qty' in vals:
+            for line in lines_to_update:
+                new_qty = line.product_qty
+                for alloc in line.purchase_request_allocation_ids:
+                    # Solo actualizar si la cantidad cambió
+                    if alloc.requested_product_uom_qty != new_qty:
+                        # No puede ser menor que lo ya recibido
+                        if new_qty < alloc.allocated_product_qty:
+                            new_qty = alloc.allocated_product_qty
+                        alloc.write({'requested_product_uom_qty': new_qty})
+                # Forzar actualización de líneas de solicitud
+                request_lines = line.purchase_request_allocation_ids.mapped('purchase_request_line_id')
+                for req_line in request_lines:
+                    req_line._refresh_quantities()
 
         return res
 
@@ -232,3 +226,9 @@ class PurchaseOrderLine(models.Model):
                 all_list.append((4, all_id.id))
             v['purchase_request_allocation_ids'] = all_list
         return val
+
+    def copy(self, default=None):
+        if default is None:
+            default = {}
+        # Copiar la línea (purchase_request_lines se copia por copy=True, asignaciones no se copian por copy=False)
+        return super().copy(default)
